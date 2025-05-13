@@ -36,20 +36,25 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, onLogoutClick }) => {
     </Link>
   </li>
   <li>
-    <Link to="/ql-phong">
-      <span className="menu-icon">🏢</span> QL Phòng
+    <Link to="/AccountCustomerManager">
+      <span className="menu-icon">📋</span> QLTK Khách Hàng
     </Link>
   </li>
   <li>
     <Link to="/ql-loai-phong">
-      <span className="menu-icon">🏢</span> QL Loại Phòng
+      <span className="menu-icon">🏢</span> QL Phòng
     </Link>
   </li>
   <li>
     <Link to="/ql-dich-vu">
-      <span className="menu-icon">🏢</span> QL Dịch vụ
+      <span className="menu-icon">🏢</span> QL Loại Phòng
     </Link>
   </li>
+  <li>
+    <Link to="/nhan-vien">
+      <span className="menu-icon">👤</span> QL Dịch Vụ
+    </Link>
+    </li>
   <li>
     <Link to="/qlct-tinh-diem">
       <span className="menu-icon">🔢</span> QLCT Tính Điểm
@@ -65,17 +70,6 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, onLogoutClick }) => {
       <span className="menu-icon">📋</span> QL Tài Khoản
     </Link>
   </li>
-  <li>
-    <Link to="/nhan-vien">
-      <span className="menu-icon">👤</span> QL Nhân Viên
-    </Link>
-  </li>
-  <li>
-    <Link to="/thong-ke">
-      <span className="menu-icon">📊</span> Thống Kê
-    </Link>
-  </li>
-
   <li onClick={onLogoutClick}>
           <span className="menu-icon">📊</span> Đăng Xuất
         </li>

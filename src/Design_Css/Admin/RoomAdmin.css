@@ -1,45 +1,238 @@
-.room-container {
+.r-room-container {
     display: flex;
-  }
-  
-  .main-content {
-    flex: 1;
-    padding: 20px;
-  }
-  
-  .room-header {
+    min-height: 100vh;
+    width: 100vw;
+    background-color: #f5f5f5;
+    box-sizing: border-box;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+.r-page-header {
     display: flex;
-    align-items: center;
-    margin-bottom: 20px;
-  }
-  
-  .menu-icon {
+    flex-direction: column;
+    align-items: flex-start; 
+    padding: 10px 20px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #ddd;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 200;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    height: 120px;
+    box-sizing: border-box;
+}
+
+.r-menu-icon {
+    position: absolute;
+    left: 20px;
+    top: 15px;
     font-size: 24px;
     cursor: pointer;
-    margin-right: 20px;
-  }
+    color: #333;
+}
+
+.r-header-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* Căn trái */
+    margin-left: 50px; /* Thêm khoảng cách để tránh đè lên r-menu-icon */
+}
+
+.r-page-header h1 {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+    margin: 5px 0;
   
-  .header-info {
+}
+
+.r-date-time-picker {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.r-date-time-picker div {
+    display: flex;
+    flex-direction: column;
+}
+
+.r-date-time-picker label {
+    font-size: 12px;
+    color: #666;
+}
+
+.r-date-time-picker input {
+    width: 120px;
+    padding: 5px;
+    font-size: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    text-align: center;
+    background-color: #fff;
+}
+
+.r-search-bar {
     display: flex;
     align-items: center;
-    gap: 20px;
-  }
-  
-  .header-info span {
-    margin-right: 10px;
-  }
-  
-  .header-info input {
+    width: 100%;
+    max-width: 400px;
+    align-self: center; /* Giữ thanh tìm kiếm ở giữa */
+}
+
+.r-search-bar input {
+    padding: 5px 10px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 4px 0 0 4px;
+    outline: none;
+    width: 100%;
+    
+}
+
+.r-search-bar .r-search-icon {
+    padding: 5px 10px;
+    background-color: #6c757d;
+    color: #fff;
+    border-radius: 0 4px 4px 0;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.r-filter-sidebar {
+    width: 250px;
+    min-width: 250px;
+    background-color: #fff;
+    padding: 15px;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    position: fixed;
+    top: 120px;
+    height: calc(100vh - 120px);
+    overflow-y: auto;
+    z-index: 100;
+    box-sizing: border-box;
+}
+
+.r-filter-sidebar h2 {
+    font-size: 20px;
+    margin-bottom: 15px;
+    color: #333;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.r-filter-section {
+    margin-bottom: 15px;
+}
+
+.r-filter-section h3 {
+    margin-bottom: 5px;
+    font-size: 20px;
+    color: #1D3E92;
+}
+
+.r-filter-section label {
+    display: block;
+    margin: 13px 0;
+    font-size: 18px;
+    color: #000000;
+}
+
+.r-filter-section input[type="radio"] {
+    margin-right: 5px;
+}
+
+.r-filter-section input[type="text"] {
+    width: 100%;
     padding: 5px;
-    border: 1px solid #ccc;
+    font-size: 12px;
+    border: 1px solid #ddd;
     border-radius: 3px;
-  }
-  
-  .room-categories h2 {
-    margin: 20px 0 10px;
-  }
-  
-  .room-list {
+    box-sizing: border-box;
+}
+
+.r-main-content {
+    flex: 1;
+    margin-left: 250px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    min-height: calc(100vh - 160px);
+    margin-top: 250px;
+    overflow-x: auto;
+}
+
+.r-room-header {
+    font-size: 23px;
+    font-weight: bold;
+    color: #1D3E92;
+    margin-bottom: 10px;
+    padding: 5px 0;
+    width: 100%;
+}
+
+.r-room-list {
     display: flex;
     flex-wrap: wrap;
-  }
+    gap: 10px;
+    width: 100%;
+    min-height: 100px;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .r-filter-sidebar {
+        width: 200px;
+        min-width: 200px;
+    }
+    .r-main-content {
+        margin-left: 200px;
+    }
+}
+
+@media (max-width: 768px) {
+    .r-filter-sidebar {
+        width: 150px;
+        min-width: 150px;
+        padding: 10px;
+    }
+    .r-main-content {
+        margin-left: 150px;
+    }
+    .r-room-list {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .r-page-header {
+        padding: 10px;
+    }
+    .r-date-time-picker {
+        flex-direction: column;
+        gap: 5px;
+        margin-bottom: 5px;
+    }
+    .r-date-time-picker input {
+        width: 100%;
+    }
+    .r-filter-sidebar {
+        position: static;
+        width: 100%;
+        min-width: 100%;
+        height: auto;
+        top: 0;
+        margin-top: 160px;
+    }
+    .r-main-content {
+        margin-left: 0;
+        margin-top: 180px;
+    }
+    .r-header-content {
+        margin-left: 40px; 
+    }
+}

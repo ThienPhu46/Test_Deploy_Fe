@@ -1,54 +1,65 @@
 .room-card {
-    width: 150px;
+    width: 200px; /* Tăng chiều rộng để hiển thị rõ hơn */
+    min-width: 200px; /* Đảm bảo không bị thu nhỏ khi lọc */
     padding: 10px;
     border-radius: 5px;
-    margin: 10px;
+    margin: 10px; /* Tăng margin để có khoảng cách đều */
     text-align: center;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  }
-  
-  .room-available {
-    background-color: #e0f7e0; /* Màu xanh nhạt cho phòng trống */
-  }
-  
-  .room-busy {
-    background-color: #f7e0e0; /* Màu đỏ nhạt cho phòng bận */
-  }
-  
-  .room-reserved {
-    background-color: #e0f0f7; /* Màu xanh dương nhạt cho phòng giao định */
-  }
-  
-  .room-header {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-family: Arial, sans-serif;
+    background-color: #98f998; /* Xanh nhạt cho Phòng trống */
+    box-sizing: border-box;
+}
+
+.room-booked {
+    background-color: #f4b8b8; /* Hồng nhạt cho Phòng đã đặt */
+}
+
+.room-occupied {
+    background-color: #b6dbf4; /* Vàng nhạt cho Phòng đang thuê */
+}
+
+.room-header {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     font-weight: bold;
-  }
-  
-  .close-icon {
-    cursor: pointer;
-  }
-  
-  .room-info {
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.status-text {
+    font-size: 12px;
+    color: #555;
+}
+
+.room-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin: 5px 0;
     font-size: 12px;
-  }
-  
-  .room-actions {
+    color: #333;
+}
+
+.status-icon {
+    font-size: 16px;
+}
+
+.content-status {
+    font-weight: bold;
+}
+
+.room-footer {
     display: flex;
-    justify-content: space-around;
-    margin-top: 10px;
-  }
-  
-  .room-actions button {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 3px;
-    cursor: pointer;
-  }
-  
-  .room-actions button:hover {
-    background-color: #0056b3;
-  }
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    color: #666;
+    margin-top: 5px;
+}
+.guest-name {
+  font-weight: bold;
+  font-size: 13px;
+}

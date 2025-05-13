@@ -1,26 +1,46 @@
 import React from 'react';
-import './RoomCard.css'; // CSS cho RoomCard
+import './RoomCard.css';
 
-const RoomCard = ({ roomNumber, status, date, note }) => {
-  // Xác định màu sắc dựa trên trạng thái
-  const statusClass = status === 'Phòng trống' ? 'room-available' :
-                     status === 'Phòng bận' ? 'room-busy' :
-                     status === 'Phòng giao định' ? 'room-reserved' : '';
+const RoomCard = ({ roomNumber, status, date, roomType, condition }) => {
+  const getStatusClass = () => {
+    switch (status) {
+      case 'Phòng trống':
+        return 'room-available';
+      case 'Phòng đã đặt':
+        return 'room-booked';
+      case 'Phòng đang thuê':
+        return 'room-occupied';
+      default:
+        return '';
+    }
+  };
+
+  const getStatusIcon = () => {
+    switch (status) {
+      case 'Phòng trống':
+        return '✖';
+      case 'Phòng đã đặt':
+        return '✓';
+      case 'Phòng đang thuê':
+        return '👤';
+      default:
+        return '';
+    }
+  };
 
   return (
-    <div className={`room-card ${statusClass}`}>
+    <div className={`room-card ${getStatusClass()}`}>
       <div className="room-header">
-        <span>{roomNumber}</span>
-        <span className="close-icon">×</span>
+        <span>{roomNumber} ({roomType})</span>
+        <span className="status-text">{status}</span>
       </div>
-      <p>{status}</p>
-      <div className="room-info">
-        <span>{date}</span>
-        <span>{note}</span>
+      <div className="room-content">
+        <span className="status-icon">{getStatusIcon()}</span>
+        <span className="content-status">{status}</span>
       </div>
-      <div className="room-actions">
-        <button>Đặt phòng</button>
-        <button>Đơn đặt</button>
+      <div className="room-footer">
+        <span>📅 {date}</span>
+        <span>{condition}</span>
       </div>
     </div>
   );
