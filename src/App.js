@@ -9,6 +9,9 @@ import CustomerManager from './Pages/Admin/CustomerManager';
 import AccountCustomerManager from './Pages/Admin/AccountCustomerManager';
 import RoomManager from './Pages/Admin/RoomManager';
 import RoomTypeManager from './Pages/Admin/RoomTypeManager';
+import ServiceManager from './Pages/Admin/ServiceManager';
+import ServiceTypeManager from './Pages/Admin/ServiceTypeManager';
+
 
 const App = () => {
   return (
@@ -22,7 +25,9 @@ const App = () => {
         <Route path="/CustomerManager" element={<CustomerManager />} />
         <Route path="/AccountCustomerManager" element={<AccountCustomerManager/>} />
         <Route path="/RoomManager" element={<RoomManager/>} />
-         <Route path="/RoomTypeManager" element={<RoomTypeManager/>} />
+        <Route path="/RoomTypeManager" element={<RoomTypeManager/>} />
+        <Route path="/ServiceManager" element={<ServiceManager/>} />
+        <Route path="/ServiceTypeManager" element={<ServiceTypeManager/>} />
       </Routes>
     </Router>
   );

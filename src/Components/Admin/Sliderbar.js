@@ -51,8 +51,13 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, onLogoutClick }) => {
     </Link>
   </li>
   <li>
-    <Link to="/nhan-vien">
+    <Link to="/ServiceManager">
       <span className="menu-icon">👤</span> QL Dịch Vụ
+    </Link>
+    </li>
+    <li>
+    <Link to="/ServiceTypeManager">
+      <span className="menu-icon">👤</span> QL Loại Dịch Vụ
     </Link>
     </li>
   <li>
