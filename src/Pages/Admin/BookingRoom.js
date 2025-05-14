@@ -11,6 +11,9 @@ const BookingList = () => {
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
+  const [bookingToDelete, setBookingToDelete] = useState(null);
 
   const bookings = [
     { id: 1, customerName: 'Nguyễn Sơn Phi Hoàng', bookingDate: '27/03/2025', employeeName: 'Chu Ngọc Sơn', roomNumber: 'P101', startDate: '27/03/2025 12:00 AM', endDate: '29/03/2025 12:00 AM', guestCount: 2 },
@@ -82,7 +85,15 @@ const BookingList = () => {
   );
 
   const handleDelete = (id) => {
-    console.log(`Xóa phiếu thuê ${id}`);
+    const booking = bookings.find((b) => b.id === id);
+    setBookingToDelete(booking);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = () => {
+    console.log(`Xóa phiếu thuê ${bookingToDelete.id}`);
+    setShowDeleteConfirm(false);
+    setShowDeleteSuccess(true);
   };
 
   const handleAddBooking = () => {
@@ -193,28 +204,29 @@ const BookingList = () => {
                 <h3>Thông tin khách hàng</h3>
                 <div className="form-group">
                   <div className="form-row">
-                    <label>Họ và tên</label>
-                    <input type="text" />
+                    <span className="form-icon">👤</span>
+                    <input type="text" placeholder="Họ và tên" />
                   </div>
                   <div className="form-row">
-                    <label>Nhập CCCD</label>
-                    <input type="text" />
+                    <span className="form-icon">🪪</span>
+                    <input type="text" placeholder="Nhập CCCD" />
                   </div>
                   <div className="form-row">
-                    <label>Nhập SĐT</label>
-                    <input type="text" />
+                    <span className="form-icon">📞</span>
+                    <input type="text" placeholder="Nhập SĐT" />
                   </div>
                   <div className="form-row">
-                    <label>Nhập địa chỉ</label>
-                    <input type="text" />
+                    <span className="form-icon">🏠</span>
+                    <input type="text" placeholder="Nhập địa chỉ" />
                   </div>
                   <div className="form-row">
-                    <label>Nhập quốc tịch</label>
-                    <input type="text" />
+                    <span className="form-icon">🌍</span>
+                    <input type="text" placeholder="Nhập quốc tịch" />
                   </div>
                   <div className="form-row">
-                    <label>Giới tính</label>
+                    <span className="form-icon">⚥</span>
                     <select>
+                      <option value="" disabled hidden>Giới tính</option>
                       <option>Nam</option>
                       <option>Nữ</option>
                       <option>Khác</option>
@@ -227,20 +239,20 @@ const BookingList = () => {
                 <h3>Thông tin phòng</h3>
                 <div className="form-group">
                   <div className="form-row">
-                    <label>Ngày bắt đầu</label>
-                    <input type="date" />
+                    <span className="form-icon">📅</span>
+                    <input type="date" placeholder="Ngày bắt đầu" />
                   </div>
                   <div className="form-row">
-                    <label>Giờ bắt đầu</label>
-                    <input type="time" />
+                    <span className="form-icon">⏰</span>
+                    <input type="time" placeholder="Giờ bắt đầu" />
                   </div>
                   <div className="form-row">
-                    <label>Ngày kết thúc</label>
-                    <input type="date" />
+                    <span className="form-icon">📅</span>
+                    <input type="date" placeholder="Ngày kết thúc" />
                   </div>
                   <div className="form-row">
-                    <label>Giờ kết thúc</label>
-                    <input type="time" />
+                    <span className="form-icon">⏰</span>
+                    <input type="time" placeholder="Giờ kết thúc" />
                   </div>
                 </div>
               </div>
@@ -353,7 +365,43 @@ const BookingList = () => {
               <button className="confirm-button" onClick={handleSaveConfirm}>
                 OK
               </button>
-              
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteConfirm && bookingToDelete && (
+        <div className="logout-modal">
+          <div className="logout-modal-content">
+            <span className="close-icon" onClick={() => setShowDeleteConfirm(false)}>X</span>
+            <div className="logout-modal-header">
+              <span className="header-text">Thông Báo</span>
+            </div>
+            <p className="logout-message">Bạn có muốn xóa khách hàng này?</p>
+            <div className="logout-modal-buttons">
+              <button className="confirm-button" onClick={handleConfirmDelete}>
+                YES
+              </button>
+              <button className="cancel-button" onClick={() => setShowDeleteConfirm(false)}>
+                NO
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteSuccess && (
+        <div className="logout-modal">
+          <div className="logout-modal-content">
+            <span className="close-icon" onClick={() => setShowDeleteSuccess(false)}>X</span>
+            <div className="logout-modal-header">
+              <span className="header-text">Thông Báo</span>
+            </div>
+            <p className="logout-message">Xóa thành công!</p>
+            <div className="logout-modal-buttons">
+              <button className="confirm-button" onClick={() => setShowDeleteSuccess(false)}>
+                OK
+              </button>
             </div>
           </div>
         </div>

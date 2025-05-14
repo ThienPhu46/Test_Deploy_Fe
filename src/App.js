@@ -7,6 +7,8 @@ import BookingRoom from './Pages/Admin/BookingRoom';
 import BillAdmin from './Pages/Admin/BillAdmin';
 import CustomerManager from './Pages/Admin/CustomerManager';
 import AccountCustomerManager from './Pages/Admin/AccountCustomerManager';
+import RoomManager from './Pages/Admin/RoomManager';
+import RoomTypeManager from './Pages/Admin/RoomTypeManager';
 
 const App = () => {
   return (
@@ -19,6 +21,8 @@ const App = () => {
         <Route path="/BillAdmin" element={<BillAdmin />} />
         <Route path="/CustomerManager" element={<CustomerManager />} />
         <Route path="/AccountCustomerManager" element={<AccountCustomerManager/>} />
+        <Route path="/RoomManager" element={<RoomManager/>} />
+         <Route path="/RoomTypeManager" element={<RoomTypeManager/>} />
       </Routes>
     </Router>
   );

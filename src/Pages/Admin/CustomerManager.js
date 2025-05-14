@@ -316,7 +316,7 @@ const CustomerManagement = () => {
             </div>
             <p className="logout-message">Bạn có muốn đăng xuất?</p>
             <div className="logout-modal-buttons">
-              <button className="confirm-button" onClick={() => console.log("Người dùng đã đăng xuất")}>
+              <button className="confirm-button" onClick={() => setShowLogoutConfirm(false)}>
                 YES
               </button>
               <button className="cancel-button" onClick={() => setShowLogoutConfirm(false)}>

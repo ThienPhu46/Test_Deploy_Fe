@@ -41,12 +41,12 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar, onLogoutClick }) => {
     </Link>
   </li>
   <li>
-    <Link to="/ql-loai-phong">
+    <Link to="/RoomManager">
       <span className="menu-icon">🏢</span> QL Phòng
     </Link>
   </li>
   <li>
-    <Link to="/ql-dich-vu">
+    <Link to="/RoomTypeManager">
       <span className="menu-icon">🏢</span> QL Loại Phòng
     </Link>
   </li>
