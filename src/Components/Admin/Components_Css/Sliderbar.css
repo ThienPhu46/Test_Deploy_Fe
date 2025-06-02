@@ -34,19 +34,20 @@
   transition: opacity 0.3s ease-in-out;
 }
 
-.close-icon {
+.sb-close-icon img {
   position: absolute;
   top: 10px;
   right: 10px;
-  font-size: 18px;
+  width: 30px;
+  height: 30px;
   color: #fff;
   cursor: pointer;
   transition: transform 0.2s ease;
 }
 
-.sidebar-header .avatar-placeholder {
-  width: 100px;
-  height: 100px;
+.sidebar-header .avatar-placeholder img {
+  width: 160px;
+  height: 160px;
   border-radius: 50%;
   background-color: #fff;
   border: 3px solid #fff;
@@ -88,9 +89,10 @@
   transform: translateX(5px);
 }
 
-.sidebar-menu .menu-icon {
+.sidebar-menu img {
   margin-right: 10px;
-  font-size: 20px;
+  width: 30px;
+  height: 30px;
   color: #0a3d8b;
   transition: transform 0.2s ease;
 }
@@ -101,7 +103,7 @@
 
 .sidebar-menu li a {
   text-decoration: none;
-  color: inherit;
+  color: black;
   display: flex;
   align-items: center;
   width: 100%;
@@ -110,4 +112,27 @@
 
 .sidebar-menu li a:hover {
   color: inherit;
+}
+
+.sidebar-menu-button {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 20px;
+  font-weight: 400;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  color: #0a3d8b;
+  width: 100%;
+  text-align: left;
+}
+
+.sidebar-menu-button:hover {
+  background-color: rgba(10, 61, 139, 0.1);
+  transform: translateX(5px);
+}
+
+.sidebar-menu-button  {
+  color: black;
 }

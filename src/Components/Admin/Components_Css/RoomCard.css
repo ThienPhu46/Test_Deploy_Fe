@@ -1,0 +1,89 @@
+.room-card {
+    width: 230px;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background-color: #68C890;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    height: 120px;
+}
+
+.room-booked {
+    background-color: #FF6B6B;
+}
+
+.room-occupied {
+    background-color: #9EC6F3;
+}
+
+.room-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: bold;
+    font-size: 14px;
+    color: #ffffff;
+    margin-bottom: 5px;
+}
+
+.status-text {
+    font-size: 12px;
+    color: #ffffff;
+}
+
+.room-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 5px 0;
+    font-size: 12px;
+    color: #333;
+}
+
+.status-icon img {
+    width: 50px;
+    height: 50px;
+    margin-right: 20px;
+}
+
+.content-status {
+    font-weight: bold;
+    color: #ffffff;
+    font-size: 22px;
+}
+
+.guest-name {
+    font-weight: bold;
+    font-size: 22px;
+    color: #ffffff;
+}
+
+.room-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 5px;
+    color: #000000; 
+    background-color: #E6E6E6;
+    
+}
+
+
+.footer-calendar {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.footer-calendar img {
+    width: 20px;
+    height: 20px;
+}
+
+.room-footer span {
+    font-size: 13px;
+    color: #000000; 
+}

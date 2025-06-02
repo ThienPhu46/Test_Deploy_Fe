@@ -68,12 +68,13 @@
 .rm-search-box {
   display: flex;
   align-items: center;
-  background-color: #dedede;
+  background-color: #ffffff;
   border-radius: 0.3rem;
   padding: 0.3rem 0.6rem;
   width: 100%;
   max-width: 300px;
   box-sizing: border-box;
+  box-shadow: 0px 4px 10px 0px rgba(0, 0, 0, 0.25);
 }
 
 .rm-search-box input {
@@ -85,9 +86,10 @@
   color: #141414;
 }
 
-.rm-search-icon {
+.rm-search-icon img {
   margin-right: 0.6rem;
-  font-size: 1rem;
+  height: 25px;
+  height: 25px;
 }
 
 .rm-add-room-btn {
@@ -143,36 +145,35 @@
   border-bottom: none;
 }
 
-.rm-edit-btn, .rm-delete-btn {
+/* Loại bỏ viền và nền của nút edit/delete */
+.rm-edit-btn,
+.rm-delete-btn {
   background: none;
   border: none;
+  padding: 0;
   cursor: pointer;
-  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.rm-edit-icon {
-  color: #00cc00;
+.rm-edit-btn img,
+.rm-delete-btn img {
+  cursor: pointer;
+  width: 25px;
+  height: 25px;
 }
 
-.rm-delete-icon {
-  color: #ff4444;
+/* Hiệu ứng hover cho mỗi hàng trong bảng */
+.rm-room-table tr {
+  transition: background-color 0.2s ease;
 }
 
-.rm-edit-btn:hover .rm-edit-icon {
-  color: #00e600;
+.rm-room-table tr:hover {
+  background-color: #d3d3d3;
 }
 
-.rm-delete-btn:hover .rm-delete-icon {
-  color: #ff6666;
-}
-
-.rm-edit-modal-wrapper {
-  background: #ffffff;
-  padding: 0.75rem;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
+.rm-edit-modal-wrapper,
 .rm-add-modal-wrapper {
   background: #ffffff;
   padding: 0.75rem;
@@ -213,11 +214,10 @@
   width: 100%;
 }
 
-.cm-field-icon {
+.cm-field-icon img {
   margin-right: 0.5rem;
-  font-size: 1.2rem;
-  color: #555;
-  width: 30px;
+  width: 25px;
+  height: 25px;
   text-align: center;
 }
 
@@ -269,21 +269,7 @@
   margin-top: 1.5rem;
 }
 
-.rm-save-edit-btn {
-  background-color: #1D3E92;
-  color: white;
-  padding: 0.5rem 2rem;
-  border: none;
-  border-radius: 50px;
-  cursor: pointer;
-  font-weight: bold;
-  font-size: 0.9rem;
-}
-
-.rm-save-edit-btn:hover {
-  background-color: #357abd;
-}
-
+.rm-save-edit-btn,
 .rm-save-add-btn {
   background-color: #1D3E92;
   color: white;
@@ -295,6 +281,7 @@
   font-size: 0.9rem;
 }
 
+.rm-save-edit-btn:hover,
 .rm-save-add-btn:hover {
   background-color: #357abd;
 }
@@ -344,12 +331,14 @@
     padding: 0.5rem;
   }
 
-  .rm-room-table th, .rm-room-table td {
+  .rm-room-table th,
+  .rm-room-table td {
     font-size: 0.9rem;
     padding: 0.5rem;
   }
 
-  .rm-edit-modal-wrapper, .rm-add-modal-wrapper {
+  .rm-edit-modal-wrapper,
+  .rm-add-modal-wrapper {
     padding: 0.5rem;
   }
 
@@ -394,7 +383,9 @@
     margin-top: 1rem;
   }
 
-  .rm-save-edit-btn, .rm-save-add-btn, .cm-cancel-btn {
+  .rm-save-edit-btn,
+  .rm-save-add-btn,
+  .cm-cancel-btn {
     padding: 0.3rem 1.5rem;
     font-size: 0.8rem;
   }
@@ -418,7 +409,8 @@
     padding: 0.4rem;
   }
 
-  .rm-room-table th, .rm-room-table td {
+  .rm-room-table th,
+  .rm-room-table td {
     font-size: 0.8rem;
     padding: 0.4rem;
   }
@@ -463,7 +455,9 @@
     margin-top: 0.5rem;
   }
 
-  .rm-save-edit-btn, .rm-save-add-btn, .cm-cancel-btn {
+  .rm-save-edit-btn,
+  .rm-save-add-btn,
+  .cm-cancel-btn {
     padding: 0.2rem 1rem;
     font-size: 0.7rem;
   }

@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../../Design_Css/Admin/BookingRoom.css';
-import Sidebar from '../../Components/Admin/Sliderbar';
+import Sidebar from '../../Components/Admin/Components_Js/Sliderbar';
+import LogoutModal from '../../Components/Admin/Components_Js/LogoutModal';
+import axios from 'axios';
 
 const BookingList = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -14,36 +16,303 @@ const BookingList = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
   const [bookingToDelete, setBookingToDelete] = useState(null);
+  const [bookings, setBookings] = useState([]);
+  const [customers, setCustomers] = useState({});
+  const [availableRooms, setAvailableRooms] = useState([]);
+  const [roomTypes, setRoomTypes] = useState({});
 
-  const bookings = [
-    { id: 1, customerName: 'Nguyễn Sơn Phi Hoàng', bookingDate: '27/03/2025', employeeName: 'Chu Ngọc Sơn', roomNumber: 'P101', startDate: '27/03/2025 12:00 AM', endDate: '29/03/2025 12:00 AM', guestCount: 2 },
-    { id: 2, customerName: 'Nguyễn Văn A', bookingDate: '28/03/2025', employeeName: 'Chu Ngọc Sơn', roomNumber: 'P102', startDate: '28/03/2025 12:00 AM', endDate: '30/03/2025 12:00 AM', guestCount: 3 },
-    { id: 3, customerName: 'Trần Thị B', bookingDate: '29/03/2025', employeeName: 'Chu Ngọc Sơn', roomNumber: 'P103', startDate: '29/03/2025 12:00 AM', endDate: '31/03/2025 12:00 AM', guestCount: 1 },
-    { id: 4, customerName: 'Lê Văn C', bookingDate: '30/03/2025', employeeName: 'Chu Ngọc Sơn', roomNumber: 'P104', startDate: '30/03/2025 12:00 AM', endDate: '01/04/2025 12:00 AM', guestCount: 2 },
-    { id: 5, customerName: 'Phạm Thị D', bookingDate: '31/03/2025', employeeName: 'Chu Ngọc Sơn', roomNumber: 'P105', startDate: '31/03/2025 12:00 AM', endDate: '02/04/2025 12:00 AM', guestCount: 4 },
-    { id: 6, customerName: 'Đỗ Văn E', bookingDate: '01/04/2025', employeeName: 'Chu Ngọc Sơn', roomNumber: 'P106', startDate: '01/04/2025 12:00 AM', endDate: '03/04/2025 12:00 AM', guestCount: 2 },
-    { id: 7, customerName: 'Võ Thị F', bookingDate: '02/04/2025', employeeName: 'Chu Ngọc Sơn', roomNumber: 'P107', startDate: '02/04/2025 12:00 AM', endDate: '04/04/2025 12:00 AM', guestCount: 3 },
-    { id: 8, customerName: 'Nguyễn Hữu G', bookingDate: '03/04/2025', employeeName: 'Chu Ngọc Sơn', roomNumber: 'P108', startDate: '03/04/2025 12:00 AM', endDate: '05/04/2025 12:00 AM', guestCount: 1 },
-    { id: 9, customerName: 'Bùi Thị H', bookingDate: '04/04/2025', employeeName: 'Chu Ngọc Sơn', roomNumber: 'P109', startDate: '04/04/2025 12:00 AM', endDate: '06/04/2025 12:00 AM', guestCount: 2 },
-    { id: 10, customerName: 'Lý Văn I', bookingDate: '05/04/2025', employeeName: 'Chu Ngọc Sơn', roomNumber: 'P110', startDate: '05/04/2025 12:00 AM', endDate: '07/04/2025 12:00 AM', guestCount: 3 },
-    { id: 11, customerName: 'Trần Minh J', bookingDate: '06/04/2025', employeeName: 'Chu Ngọc Sơn', roomNumber: 'P111', startDate: '06/04/2025 12:00 AM', endDate: '08/04/2025 12:00 AM', guestCount: 2 },
-    { id: 12, customerName: 'Nguyễn Thị K', bookingDate: '07/04/2025', employeeName: 'Chu Ngọc Sơn', roomNumber: 'P112', startDate: '07/04/2025 12:00 AM', endDate: '09/04/2025 12:00 AM', guestCount: 1 },
-    { id: 13, customerName: 'Hoàng Văn L', bookingDate: '08/04/2025', employeeName: 'Chu Ngọc Sơn', roomNumber: 'P113', startDate: '08/04/2025 12:00 AM', endDate: '10/04/2025 12:00 AM', guestCount: 4 },
-    { id: 14, customerName: 'Vũ Thị M', bookingDate: '09/04/2025', employeeName: 'Chu Ngọc Sơn', roomNumber: 'P114', startDate: '09/04/2025 12:00 AM', endDate: '11/04/2025 12:00 AM', guestCount: 2 },
-  ];
+  const [customerInfo, setCustomerInfo] = useState({
+    hoTen: '',
+    sdt: ''
+  });
+  const [bookingInfo, setBookingInfo] = useState({
+    ngayBatDau: '',
+    gioBatDau: '',
+    ngayKetThuc: '',
+    gioKetThuc: ''
+  });
 
-  const availableRooms = [
-    { id: 'P101', type: 'Phòng đơn' },
-    { id: 'P102', type: 'Phòng đôi' },
-  ];
+  const API_BASE_URL = 'http://localhost:5282/api';
+
+  // Lấy danh sách đặt phòng
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/bookings`, {
+          params: {
+            pageNumber: 1,
+            pageSize: 100,
+            searchTerm: null,
+            sortBy: 'MaDatPhong',
+            sortOrder: 'ASC'
+          }
+        });
+        if (response.data.success) {
+          const bookingData = response.data.data;
+          setBookings(bookingData);
+          await fetchCustomerData(bookingData);
+        }
+      } catch (error) {
+        console.error('Lỗi khi lấy danh sách đặt phòng:', error);
+      }
+    };
+
+    fetchBookings();
+  }, []);
+
+  // Lấy danh sách loại phòng
+  useEffect(() => {
+    const fetchRoomTypes = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/room-types`, {
+          params: {
+            pageNumber: 1,
+            pageSize: 100,
+            sortBy: 'MaLoaiPhong',
+            sortOrder: 'ASC'
+          }
+        });
+        if (response.data.success) {
+          const typesMap = {};
+          response.data.data.forEach(type => {
+            typesMap[type.maLoaiPhong] = type.tenLoaiPhong;
+          });
+          setRoomTypes(typesMap);
+        }
+      } catch (error) {
+        console.error('Lỗi khi lấy danh sách loại phòng:', error);
+      }
+    };
+
+    fetchRoomTypes();
+  }, []);
+
+  // Lấy danh sách phòng trống (Available)
+  useEffect(() => {
+    const fetchAvailableRooms = async () => {
+      try {
+        const response = await axios.get(`${API_BASE_URL}/rooms`, {
+          params: {
+            pageNumber: 1,
+            pageSize: 100,
+            tinhTrang: 'Available',
+            sortBy: 'MaPhong',
+            sortOrder: 'ASC'
+          }
+        });
+        if (response.data.success) {
+          // Ánh xạ mã loại phòng thành tên loại phòng
+          const rooms = response.data.data.map(room => ({
+            id: room.soPhong,
+            maLoaiPhong: room.loaiPhong,
+            type: roomTypes[room.loaiPhong] || 'Chưa xác định'
+          }));
+          setAvailableRooms(rooms);
+        }
+      } catch (error) {
+        console.error('Lỗi khi lấy danh sách phòng trống:', error);
+      }
+    };
+
+    if (Object.keys(roomTypes).length > 0) {
+      fetchAvailableRooms();
+    }
+  }, [roomTypes]);
+
+  // Lấy thông tin khách hàng
+  const fetchCustomerData = async (bookingData) => {
+    try {
+      const customerPromises = bookingData.map(async (booking) => {
+        try {
+          const customerResponse = await axios.get(`${API_BASE_URL}/customers/${booking.maKhachHang}`);
+          if (customerResponse.data.success) {
+            return { [booking.maKhachHang]: customerResponse.data.data.hoTenKhachHang };
+          }
+          return { [booking.maKhachHang]: 'Unknown' };
+        } catch (error) {
+          return { [booking.maKhachHang]: 'Unknown' };
+        }
+      });
+
+      const customersData = await Promise.all(customerPromises);
+      const customersMap = Object.assign({}, ...customersData);
+      setCustomers(customersMap);
+    } catch (error) {
+      console.error('Lỗi khi lấy dữ liệu khách hàng:', error);
+    }
+  };
+
+  // Lọc dữ liệu dựa trên searchTerm
+  const filteredBookings = bookings.filter((booking) =>
+    customers[booking.maKhachHang]?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Xử lý chi tiết đặt phòng
+  const handleDetails = async (maDatPhong) => {
+    try {
+      const bookingResponse = await axios.get(`${API_BASE_URL}/bookings/${maDatPhong}`);
+      if (bookingResponse.data.success) {
+        const booking = bookingResponse.data.data;
+        const roomResponse = await axios.get(`${API_BASE_URL}/rooms/${booking.maPhong}`);
+        let roomNumber = 'Chưa xác định';
+        if (roomResponse.data.success) {
+          roomNumber = roomResponse.data.data.soPhong;
+        }
+
+        setSelectedBooking({
+          id: booking.maDatPhong,
+          customerName: customers[booking.maKhachHang] || 'Unknown',
+          bookingDate: new Date(booking.ngayDat).toLocaleDateString('vi-VN'),
+          employeeName: 'Chu Ngọc Sơn',
+          roomNumber: roomNumber,
+          startDate: new Date(booking.gioCheckIn).toLocaleString('vi-VN'),
+          endDate: new Date(booking.gioCheckOut).toLocaleString('vi-VN')
+        });
+        setShowDetailsModal(true);
+      }
+    } catch (error) {
+      console.error('Lỗi khi tải chi tiết đặt phòng:', error);
+    }
+  };
+
+  // Xử lý xóa đặt phòng
+  const handleConfirmDelete = async () => {
+    try {
+      const response = await axios.delete(`${API_BASE_URL}/bookings/${bookingToDelete.id}`);
+      if (response.data.success) {
+        setBookings(bookings.filter((booking) => booking.maDatPhong !== bookingToDelete.id));
+        setShowDeleteConfirm(false);
+        setShowDeleteSuccess(true);
+        
+        // Cập nhật lại danh sách phòng trống
+        const roomResponse = await axios.get(`${API_BASE_URL}/rooms`, {
+          params: { 
+            pageNumber: 1, 
+            pageSize: 100, 
+            tinhTrang: 'Available', 
+            sortBy: 'MaPhong', 
+            sortOrder: 'ASC' 
+          }
+        });
+        if (roomResponse.data.success) {
+          const rooms = roomResponse.data.data.map(room => ({
+            id: room.soPhong,
+            maLoaiPhong: room.loaiPhong,
+            type: roomTypes[room.loaiPhong] || 'Chưa xác định'
+          }));
+          setAvailableRooms(rooms);
+        }
+      }
+    } catch (error) {
+      console.error('Lỗi khi xóa đặt phòng:', error);
+    }
+  };
+
+  // Xử lý lưu đặt phòng từ form
+  const handleSaveBooking = async () => {
+    if (selectedRooms.length === 0) {
+      alert('Vui lòng chọn ít nhất một phòng trước khi lưu.');
+      return;
+    }
+
+    try {
+      // Tạo khách hàng
+      const customerResponse = await axios.post(`${API_BASE_URL}/customers`, {
+        hoTenKhachHang: customerInfo.hoTen,
+        email: `${customerInfo.sdt}@example.com`,
+        dienThoai: customerInfo.sdt,
+        maCT: '1'
+      });
+
+      if (!customerResponse.data.success) {
+        alert('Không thể tạo khách hàng: ' + customerResponse.data.message);
+        return;
+      }
+
+      const maKhachHang = customerResponse.data.data;
+
+      // Tạo đặt phòng cho mỗi phòng đã chọn
+      const bookingPromises = selectedRooms.map(async (room) => {
+        // Lấy mã phòng từ số phòng
+        const roomResponse = await axios.get(`${API_BASE_URL}/rooms/search?soPhong=${room.id}`);
+        if (!roomResponse.data.success) {
+          throw new Error(`Không tìm thấy phòng ${room.id}`);
+        }
+        const maPhong = roomResponse.data.data.maPhong;
+
+        const checkIn = new Date(`${bookingInfo.ngayBatDau}T${bookingInfo.gioBatDau}`);
+        const checkOut = new Date(`${bookingInfo.ngayKetThuc}T${bookingInfo.gioKetThuc}`);
+        
+        return axios.post(`${API_BASE_URL}/bookings`, {
+          maKhachHang: parseInt(maKhachHang),
+          maPhong: maPhong,
+          gioCheckIn: checkIn.toISOString(),
+          gioCheckOut: checkOut.toISOString(),
+          ngayDat: new Date().toISOString(),
+          loaiTinhTien: 'Nightly'
+        });
+      });
+
+      const responses = await Promise.all(bookingPromises);
+      const allSuccess = responses.every((res) => res.data.success);
+
+      if (allSuccess) {
+        setShowSaveConfirm(true);
+        setIsFormOpen(false);
+        setSelectedRooms([]);
+        setCustomerInfo({ hoTen: '', sdt: '' });
+        setBookingInfo({ ngayBatDau: '', gioBatDau: '', ngayKetThuc: '', gioKetThuc: '' });
+        
+        // Tải lại danh sách đặt phòng
+        const bookingResponse = await axios.get(`${API_BASE_URL}/bookings`, {
+          params: { pageNumber: 1, pageSize: 100, sortBy: 'MaDatPhong', sortOrder: 'ASC' }
+        });
+        if (bookingResponse.data.success) {
+          setBookings(bookingResponse.data.data);
+          await fetchCustomerData(bookingResponse.data.data);
+        }
+        
+        // Tải lại danh sách phòng trống
+        const roomResponse = await axios.get(`${API_BASE_URL}/rooms`, {
+          params: { 
+            pageNumber: 1, 
+            pageSize: 100, 
+            tinhTrang: 'Available', 
+            sortBy: 'MaPhong', 
+            sortOrder: 'ASC' 
+          }
+        });
+        if (roomResponse.data.success) {
+          const rooms = roomResponse.data.data.map(room => ({
+            id: room.soPhong,
+            maLoaiPhong: room.loaiPhong,
+            type: roomTypes[room.loaiPhong] || 'Chưa xác định'
+          }));
+          setAvailableRooms(rooms);
+        }
+      }
+    } catch (error) {
+      console.error('Lỗi khi tạo đặt phòng:', error);
+      alert('Đã xảy ra lỗi khi tạo đặt phòng.');
+    }
+  };
+
+  const handleCustomerInfoChange = (e) => {
+    const { name, value } = e.target;
+    setCustomerInfo((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleBookingInfoChange = (e) => {
+    const { name, value } = e.target;
+    setBookingInfo((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleLogoutClick = () => {
     setShowLogoutConfirm(true);
   };
 
   const handleConfirmLogout = () => {
-    console.log("Người dùng đã đăng xuất");
-    setShowLogoutConfirm(false);
+    window.location.href = '/';
   };
 
   const handleCancelLogout = () => {
@@ -51,20 +320,7 @@ const BookingList = () => {
   };
 
   const handleSaveConfirm = () => {
-    console.log('Lưu thông tin đặt phòng:', selectedRooms);
     setShowSaveConfirm(false);
-    setIsFormOpen(false);
-    setSelectedRooms([]);
-  };
-
-  const handleCancelSave = () => {
-    setShowSaveConfirm(false);
-  };
-
-  const handleDetails = (id) => {
-    const booking = bookings.find((b) => b.id === id);
-    setSelectedBooking(booking);
-    setShowDetailsModal(true);
   };
 
   const handleCloseDetails = () => {
@@ -80,20 +336,10 @@ const BookingList = () => {
     setSearchTerm(e.target.value);
   };
 
-  const filteredBookings = bookings.filter((booking) =>
-    booking.customerName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   const handleDelete = (id) => {
-    const booking = bookings.find((b) => b.id === id);
-    setBookingToDelete(booking);
+    const booking = bookings.find((b) => b.maDatPhong === id);
+    setBookingToDelete({ id: booking.maDatPhong });
     setShowDeleteConfirm(true);
-  };
-
-  const handleConfirmDelete = () => {
-    console.log(`Xóa phiếu thuê ${bookingToDelete.id}`);
-    setShowDeleteConfirm(false);
-    setShowDeleteSuccess(true);
   };
 
   const handleAddBooking = () => {
@@ -103,18 +349,19 @@ const BookingList = () => {
   const handleCloseForm = () => {
     setIsFormOpen(false);
     setSelectedRooms([]);
-  };
-
-  const handleSaveBooking = () => {
-    setShowSaveConfirm(true);
+    setCustomerInfo({ hoTen: '', sdt: '' });
+    setBookingInfo({ ngayBatDau: '', gioBatDau: '', ngayKetThuc: '', gioKetThuc: '' });
   };
 
   const handleAddRoom = (room) => {
     setSelectedRooms([...selectedRooms, { ...room, guests: 1 }]);
+    setAvailableRooms(availableRooms.filter((r) => r.id !== room.id));
   };
 
   const handleRemoveRoom = (roomId) => {
+    const removedRoom = selectedRooms.find((r) => r.id === roomId);
     setSelectedRooms(selectedRooms.filter((room) => room.id !== roomId));
+    setAvailableRooms([...availableRooms, removedRoom]);
   };
 
   const handleMoreOptions = () => {
@@ -123,10 +370,15 @@ const BookingList = () => {
 
   return (
     <div className="booking-list-container">
-      <Sidebar 
-        isSidebarOpen={isSidebarOpen} 
-        toggleSidebar={toggleSidebar} 
-        onLogoutClick={handleLogoutClick} 
+      <Sidebar
+        isSidebarOpen={isSidebarOpen}
+        toggleSidebar={toggleSidebar}
+        onLogoutClick={handleLogoutClick}
+      />
+      <LogoutModal
+        isOpen={showLogoutConfirm}
+        onConfirm={handleConfirmLogout}
+        onCancel={handleCancelLogout}
       />
       <div className="top-header">
         <div className="top-title-container">
@@ -138,8 +390,8 @@ const BookingList = () => {
 
       <div className="content-wrapperr">
         <div className="search-bar-container">
-          <div className="search-bar">
-            <span className="search-icon">🔍</span>
+          <div className="search-barr">
+            <span className="search-icon"><img src="/icon_LTW/TimKiem.png" alt="Tìm kiếm"></img></span>
             <input
               type="text"
               placeholder="Tìm theo tên khách hàng"
@@ -166,25 +418,25 @@ const BookingList = () => {
             </thead>
             <tbody>
               {filteredBookings.map((booking) => (
-                <tr key={booking.id}>
-                  <td>{booking.id}</td>
-                  <td>{booking.customerName}</td>
-                  <td>{booking.bookingDate}</td>
-                  <td>{booking.employeeName}</td>
+                <tr key={booking.maDatPhong}>
+                  <td>{booking.maDatPhong}</td>
+                  <td>{customers[booking.maKhachHang] || 'Unknown'}</td>
+                  <td>{new Date(booking.ngayDat).toLocaleDateString('vi-VN')}</td>
+                  <td>Chu Ngọc Sơn</td>
                   <td>
                     <button
-                      className="details-button"
-                      onClick={() => handleDetails(booking.id)}
+                      className="details-buttonn"
+                      onClick={() => handleDetails(booking.maDatPhong)}
                     >
-                      •••
+                      <img src="/icon_LTW/ChiTiet.png" alt="Chi tiết"></img>
                     </button>
                   </td>
                   <td>
                     <button
                       className="delete-button"
-                      onClick={() => handleDelete(booking.id)}
+                      onClick={() => handleDelete(booking.maDatPhong)}
                     >
-                      🗑️
+                      <img src="/icon_LTW/Xoa.png" alt="Xóa"></img>
                     </button>
                   </td>
                 </tr>
@@ -198,39 +450,30 @@ const BookingList = () => {
         <div className="booking-form-overlay">
           <div className="booking-form-container">
             <h2 className="booking-form-title">Đặt Phòng</h2>
-            
+
             <div className="form-sections">
               <div className="form-section">
                 <h3>Thông tin khách hàng</h3>
                 <div className="form-group">
                   <div className="form-row">
-                    <span className="form-icon">👤</span>
-                    <input type="text" placeholder="Họ và tên" />
+                    <span className="form-icon"><img src="/icon_LTW/ĐP_Hoten.png" alt="Họ tên"></img></span>
+                    <input
+                      type="text"
+                      name="hoTen"
+                      placeholder="Họ và tên"
+                      value={customerInfo.hoTen}
+                      onChange={handleCustomerInfoChange}
+                    />
                   </div>
                   <div className="form-row">
-                    <span className="form-icon">🪪</span>
-                    <input type="text" placeholder="Nhập CCCD" />
-                  </div>
-                  <div className="form-row">
-                    <span className="form-icon">📞</span>
-                    <input type="text" placeholder="Nhập SĐT" />
-                  </div>
-                  <div className="form-row">
-                    <span className="form-icon">🏠</span>
-                    <input type="text" placeholder="Nhập địa chỉ" />
-                  </div>
-                  <div className="form-row">
-                    <span className="form-icon">🌍</span>
-                    <input type="text" placeholder="Nhập quốc tịch" />
-                  </div>
-                  <div className="form-row">
-                    <span className="form-icon">⚥</span>
-                    <select>
-                      <option value="" disabled hidden>Giới tính</option>
-                      <option>Nam</option>
-                      <option>Nữ</option>
-                      <option>Khác</option>
-                    </select>
+                    <span className="form-icon"><img src="/icon_LTW/ĐP_SĐT.png" alt="SĐT"></img></span>
+                    <input
+                      type="text"
+                      name="sdt"
+                      placeholder="Nhập SĐT"
+                      value={customerInfo.sdt}
+                      onChange={handleCustomerInfoChange}
+                    />
                   </div>
                 </div>
               </div>
@@ -239,20 +482,44 @@ const BookingList = () => {
                 <h3>Thông tin phòng</h3>
                 <div className="form-group">
                   <div className="form-row">
-                    <span className="form-icon">📅</span>
-                    <input type="date" placeholder="Ngày bắt đầu" />
+                    <span className="form-icon"><img src="/icon_LTW/Lich.png" alt="Ngày bắt đầu"></img></span>
+                    <input
+                      type="date"
+                      name="ngayBatDau"
+                      placeholder="Ngày bắt đầu"
+                      value={bookingInfo.ngayBatDau}
+                      onChange={handleBookingInfoChange}
+                    />
                   </div>
                   <div className="form-row">
-                    <span className="form-icon">⏰</span>
-                    <input type="time" placeholder="Giờ bắt đầu" />
+                    <span className="form-icon"><img src="/icon_LTW/DongHo.png" alt="Giờ bắt đầu"></img></span>
+                    <input
+                      type="time"
+                      name="gioBatDau"
+                      placeholder="Giờ bắt đầu"
+                      value={bookingInfo.gioBatDau}
+                      onChange={handleBookingInfoChange}
+                    />
                   </div>
                   <div className="form-row">
-                    <span className="form-icon">📅</span>
-                    <input type="date" placeholder="Ngày kết thúc" />
+                    <span className="form-icon"><img src="/icon_LTW/Lich.png" alt="Ngày kết thúc"></img></span>
+                    <input
+                      type="date"
+                      name="ngayKetThuc"
+                      placeholder="Ngày kết thúc"
+                      value={bookingInfo.ngayKetThuc}
+                      onChange={handleBookingInfoChange}
+                    />
                   </div>
                   <div className="form-row">
-                    <span className="form-icon">⏰</span>
-                    <input type="time" placeholder="Giờ kết thúc" />
+                    <span className="form-icon"><img src="/icon_LTW/DongHo.png" alt="Giờ kết thúc"></img></span>
+                    <input
+                      type="time"
+                      name="gioKetThuc"
+                      placeholder="Giờ kết thúc"
+                      value={bookingInfo.gioKetThuc}
+                      onChange={handleBookingInfoChange}
+                    />
                   </div>
                 </div>
               </div>
@@ -270,21 +537,26 @@ const BookingList = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {availableRooms.map((room) => (
-                      <tr key={room.id}>
-                        <td>{room.id}</td>
-                        <td>{room.type}</td>
-                        <td>
-                          <button
-                            className="action-button add-room-button"
-                            onClick={() => handleAddRoom(room)}
-                            disabled={selectedRooms.some((r) => r.id === room.id)}
-                          >
-                            +
-                          </button>
-                        </td>
+                    {availableRooms.length > 0 ? (
+                      availableRooms.map((room) => (
+                        <tr key={room.id}>
+                          <td>{room.id}</td>
+                          <td>{room.type}</td>
+                          <td>
+                            <button
+                              className="action-button add-room-button"
+                              onClick={() => handleAddRoom(room)}
+                            >
+                              <img src="/icon_LTW/MdiPlusCircle.png" alt="Thêm phòng"></img>
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="3">Không có phòng trống</td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -310,7 +582,7 @@ const BookingList = () => {
                               className="action-button remove-room-button"
                               onClick={() => handleRemoveRoom(room.id)}
                             >
-                              -
+                              <img src="/icon_LTW/MdiMinusCircle.png" alt="Xóa phòng"></img>
                             </button>
                           </td>
                         </tr>
@@ -326,28 +598,8 @@ const BookingList = () => {
             </div>
 
             <div className="form-buttons">
-              <button className="save-button" onClick={handleSaveBooking}>Lưu</button>
-              <button className="cancel-button" onClick={handleCloseForm}>Thoát</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showLogoutConfirm && (
-        <div className="logout-modal">
-          <div className="logout-modal-content">
-            <span className="close-icon" onClick={handleCancelLogout}>X</span>
-            <div className="logout-modal-header">
-              <span className="header-text">Thông Báo</span>
-            </div>
-            <p className="logout-message">Bạn có muốn đăng xuất?</p>
-            <div className="logout-modal-buttons">
-              <button className="confirm-button" onClick={handleConfirmLogout}>
-                YES
-              </button>
-              <button className="cancel-button" onClick={handleCancelLogout}>
-                NO
-              </button>
+              <button className="cancel-button" onClick={handleSaveBooking}>LƯU</button>
+              <button className="cancel-buttonn" onClick={handleCloseForm}>THOÁT</button>
             </div>
           </div>
         </div>
@@ -356,7 +608,7 @@ const BookingList = () => {
       {showSaveConfirm && (
         <div className="logout-modal">
           <div className="logout-modal-content">
-            <span className="close-icon" onClick={handleCancelSave}>X</span>
+            <span className="close-icon" onClick={handleSaveConfirm}><img src="/icon_LTW/FontistoClose.png" alt="#"></img></span>
             <div className="logout-modal-header">
               <span className="header-text">Thông Báo</span>
             </div>
@@ -373,7 +625,7 @@ const BookingList = () => {
       {showDeleteConfirm && bookingToDelete && (
         <div className="logout-modal">
           <div className="logout-modal-content">
-            <span className="close-icon" onClick={() => setShowDeleteConfirm(false)}>X</span>
+            <span className="close-icon" onClick={() => setShowDeleteConfirm(false)}><img src="/icon_LTW/FontistoClose.png" alt="#"></img></span>
             <div className="logout-modal-header">
               <span className="header-text">Thông Báo</span>
             </div>
@@ -393,7 +645,7 @@ const BookingList = () => {
       {showDeleteSuccess && (
         <div className="logout-modal">
           <div className="logout-modal-content">
-            <span className="close-icon" onClick={() => setShowDeleteSuccess(false)}>X</span>
+            <span className="close-icon" onClick={() => setShowDeleteSuccess(false)}><img src="/icon_LTW/FontistoClose.png" alt="#"></img></span>
             <div className="logout-modal-header">
               <span className="header-text">Thông Báo</span>
             </div>
@@ -413,13 +665,16 @@ const BookingList = () => {
             <h2 className="details-modal-title">Chi Tiết Phiếu Thuê {selectedBooking.id}</h2>
             <div className="details-modal-header">
               <div className="header-item">
-                <span role="img" aria-label="user">👤</span> {selectedBooking.customerName}
+                <span role="img" aria-label="user"><img src="/icon_LTW/ĐP_Chitietphieuthue.png" alt="Khách hàng"></img></span>
+                {selectedBooking.customerName}
               </div>
               <div className="header-item">
-                <span role="img" aria-label="calendar">📅</span> {selectedBooking.bookingDate}
+                <span role="img" aria-label="calendar"><img src="/icon_LTW/Lich.png" alt="Ngày lập"></img></span>
+                {selectedBooking.bookingDate}
               </div>
               <div className="header-item">
-                <span role="img" aria-label="employee">👥</span> {selectedBooking.employeeName}
+                <span role="img" aria-label="employee"><img src="/icon_LTW/ĐPChitietphieuthue2.png" alt="Nhân viên"></img></span>
+                {selectedBooking.employeeName}
               </div>
             </div>
             <table className="bk-details-table">
@@ -428,15 +683,13 @@ const BookingList = () => {
                   <th>Số phòng</th>
                   <th>Ngày bắt đầu</th>
                   <th>Ngày kết thúc</th>
-                  <th>Số người</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>{selectedBooking.roomNumber}</td>
-                  <td>{selectedBooking.startDate}</td>
-                  <td>{selectedBooking.endDate}</td>
-                  <td>{selectedBooking.guestCount}</td>
+                  <td>{selectedBooking.roomNumber || 'Không xác định'}</td>
+                  <td>{selectedBooking.startDate || 'Không xác định'}</td>
+                  <td>{selectedBooking.endDate || 'Không xác định'}</td>
                 </tr>
               </tbody>
             </table>

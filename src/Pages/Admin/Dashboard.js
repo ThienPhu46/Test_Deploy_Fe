@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import '../../Design_Css/Admin//Dashboard.css';
-import Sidebar from '../../Components/Admin/Sliderbar';
+import '../../Design_Css/Admin/Dashboard.css';
+import Sidebar from '../../Components/Admin/Components_Js/Sliderbar';
+import LogoutModal from '../../Components/Admin/Components_Js/LogoutModal';
 
 const Dashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -17,7 +18,7 @@ const Dashboard = () => {
   const handleConfirmLogout = () => {
     console.log("Người dùng đã đăng xuất");
     setShowLogoutConfirm(false);
-    // Thêm logic đăng xuất thực tế tại đây (ví dụ: xóa token, chuyển hướng về trang đăng nhập)
+    window.location.href = '/';
   };
 
   const handleCancelLogout = () => {
@@ -26,10 +27,10 @@ const Dashboard = () => {
 
   return (
     <div className="dashboard-container">
-      <Sidebar 
-        isSidebarOpen={isSidebarOpen} 
-        toggleSidebar={toggleSidebar} 
-        onLogoutClick={handleLogoutClick} 
+      <Sidebar
+        isSidebarOpen={isSidebarOpen}
+        toggleSidebar={toggleSidebar}
+        onLogoutClick={handleLogoutClick}
       />
       {/* Top Header (Trang Chủ) */}
       <div className="top-header">
@@ -38,6 +39,11 @@ const Dashboard = () => {
           <div className="top-title">Trang Chủ</div>
         </div>
         <div className="more-icon">⋮</div>
+      </div>
+      <div className="logo-container">
+        <div className="logodebug">
+          <img src="/icon_LTW/Logo_Dashboard.png" alt="Logo Dashboard" />
+        </div>
       </div>
 
       {/* Main Title */}
@@ -88,26 +94,12 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-      
-      {showLogoutConfirm && (
-        <div className="logout-modal">
-          <div className="logout-modal-content">
-            <span className="close-icon" onClick={handleCancelLogout}>X</span>
-            <div className="logout-modal-header">
-              <span className="header-text">Thông Báo</span>
-            </div>
-            <p className="logout-message">Bạn có muốn đăng xuất?</p>
-            <div className="logout-modal-buttons">
-              <button className="confirm-button" onClick={handleConfirmLogout}>
-                YES
-              </button>
-              <button className="cancel-button" onClick={handleCancelLogout}>
-                NO
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
+      <LogoutModal
+        isOpen={showLogoutConfirm}
+        onConfirm={handleConfirmLogout}
+        onCancel={handleCancelLogout}
+      />
     </div>
   );
 };

@@ -11,39 +11,39 @@
   box-sizing: border-box;
 }
 
- .top-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.5rem 2rem;
-      background-color: #ededed;
-      width: 100%;
-      box-sizing: border-box;
-      position: sticky;
-      top: 0;
-      z-index: 900;
-      height: 4rem;
-  }
-  
-  .top-title-container {
-      display: flex;
-      align-items: center;
-  }
-  
-  .top-title {
-      font-size: 1.5rem;
-      font-weight: 600;
-      color: #000;
-      margin-left: 2rem;
-      margin-bottom: 0.5rem;
-  }
-  
-  .menu-icon,
-  .more-icon {
-      font-size: 1.5rem;
-      cursor: pointer;
-      color: #000;
-  }
+.top-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 2rem;
+  background-color: #ededed;
+  width: 100%;
+  box-sizing: border-box;
+  position: sticky;
+  top: 0;
+  z-index: 900;
+  height: 4rem;
+}
+
+.top-title-container {
+  display: flex;
+  align-items: center;
+}
+
+.top-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #000;
+  margin-left: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.menu-icon,
+.more-icon {
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #000;
+}
 
 .acm-content-wrapper {
   background-color: #ffffff;
@@ -67,12 +67,13 @@
 .acm-search-box {
   display: flex;
   align-items: center;
-  background-color: #dedede;
+  background-color: #ffffff;
   border-radius: 0.3rem;
   padding: 0.3rem 0.6rem;
   width: 100%;
   max-width: 300px;
   box-sizing: border-box;
+  box-shadow: 0px 4px 10px 0px rgba(0, 0, 0, 0.25);
 }
 
 .acm-search-box input {
@@ -84,9 +85,10 @@
   color: #141414;
 }
 
-.acm-search-icon {
+.acm-search-icon img {
   margin-right: 0.6rem;
-  font-size: 1rem;
+  width: 25px;
+  height: 25px;
 }
 
 .acm-table-container {
@@ -124,28 +126,34 @@
   border-bottom: none;
 }
 
+/* Loại bỏ viền và nền của nút edit/delete */
 .acm-edit-btn,
 .acm-delete-btn {
   background: none;
   border: none;
+  padding: 0;
   cursor: pointer;
-  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.acm-edit-icon {
-  color: #00cc00;
+.acm-edit-btn img,
+.acm-delete-btn img {
+  cursor: pointer;
+  width: 25px;
+  height: 25px;
+
 }
 
-.acm-delete-icon {
-  color: #ff4444;
+
+/* Hiệu ứng hover cho mỗi hàng trong bảng */
+.acm-account-table tr {
+  transition: background-color 0.2s ease;
 }
 
-.acm-edit-btn:hover .acm-edit-icon {
-  color: #00e600;
-}
-
-.acm-delete-btn:hover .acm-delete-icon {
-  color: #ff6666;
+.acm-account-table tr:hover {
+  background-color: #d3d3d3;
 }
 
 .acm-modal-overlay {
@@ -201,11 +209,10 @@
   width: 100%;
 }
 
-.acm-field-icon {
+.acm-field-icon img {
   margin-right: 0.5rem;
-  font-size: 1.2rem;
-  color: #555;
-  width: 30px;
+  width: 25px;
+  height: 25px;
   text-align: center;
 }
 
@@ -267,53 +274,66 @@
     padding: 0.5rem 1rem;
     height: 3.5rem;
   }
+
   .acm-top-title {
     font-size: 1.2rem;
     margin-left: 0.5rem;
   }
+
   .acm-menu-icon {
     font-size: 1.2rem;
   }
+
   .acm-content-wrapper {
     width: 95%;
     padding: 0.5rem;
   }
+
   .acm-search-box {
     max-width: 100%;
     margin-bottom: 0.5rem;
   }
+
   .acm-account-table th,
   .acm-account-table td {
     font-size: 0.9rem;
     padding: 0.5rem;
   }
+
   .acm-modal-content {
     max-width: 90%;
     padding: 1rem;
   }
+
   .acm-modal-title {
     font-size: 1.2rem;
     margin-bottom: 1rem;
   }
+
   .acm-form-container {
     gap: 0.5rem;
   }
+
   .acm-form-field {
     padding: 0.3rem 0;
   }
+
   .acm-field-icon {
     font-size: 1rem;
     margin-right: 0.3rem;
     width: 25px;
   }
+
   .acm-input-field {
     padding: 0.3rem;
     font-size: 0.8rem;
   }
+
   .acm-modal-actions {
     gap: 0.5rem;
     margin-top: 1rem;
   }
+
   .acm-save-btn,
   .acm-cancel-btn {
     padding: 0.3rem 1.5rem;
@@ -325,43 +345,54 @@
   .acm-top-title {
     font-size: 1rem;
   }
+
   .acm-menu-icon {
     font-size: 1rem;
   }
+
   .acm-search-box input {
     font-size: 0.9rem;
   }
+
   .acm-account-table th,
   .acm-account-table td {
     font-size: 0.8rem;
     padding: 0.4rem;
   }
+
   .acm-modal-content {
     padding: 0.5rem;
   }
+
   .acm-modal-title {
     font-size: 1rem;
     margin-bottom: 0.5rem;
   }
+
   .acm-form-container {
     gap: 0.3rem;
   }
+
   .acm-form-field {
     padding: 0.2rem 0;
   }
+
   .acm-field-icon {
     font-size: 0.9rem;
     margin-right: 0.2rem;
     width: 20px;
   }
+
   .acm-input-field {
     padding: 0.2rem;
     font-size: 0.7rem;
   }
+
   .acm-modal-actions {
     gap: 0.3rem;
     margin-top: 0.5rem;
   }
+
   .acm-save-btn,
   .acm-cancel-btn {
     padding: 0.2rem 1rem;

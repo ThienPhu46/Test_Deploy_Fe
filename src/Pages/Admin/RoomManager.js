@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
 import '../../Design_Css/Admin/RoomManager.css';
-import Sidebar from '../../Components/Admin/Sliderbar';
-
+import Sidebar from '../../Components/Admin/Components_Js/Sliderbar';
+import LogoutModal from '../../Components/Admin/Components_Js/LogoutModal'; 
 const RoomManagement = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,7 +44,11 @@ const RoomManagement = () => {
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
-
+ const handleConfirmLogout = () => {
+    console.log("Người dùng đã đăng xuất");
+    setShowLogoutConfirm(false);
+    window.location.href = '/'; // Điều hướng sau khi xác nhận
+  };
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
   };
@@ -54,7 +58,9 @@ const RoomManagement = () => {
     setSelectedRoom(room);
     setShowDetailsModal(true);
   };
-
+const handleCancelLogout = () => {
+    setShowLogoutConfirm(false);
+  };
   const filteredRooms = rooms.filter((room) =>
     room.roomNumber.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -109,6 +115,11 @@ const RoomManagement = () => {
         toggleSidebar={toggleSidebar} 
         onLogoutClick={() => setShowLogoutConfirm(true)} 
       />
+       <LogoutModal 
+        isOpen={showLogoutConfirm}
+        onConfirm={handleConfirmLogout}
+        onCancel={handleCancelLogout}
+      />
       <div className="top-header">
         <div className="top-title-container">
           <div className="menu-icon" onClick={toggleSidebar}>☰</div>
@@ -120,7 +131,7 @@ const RoomManagement = () => {
       <div className="rm-content-wrapper">
         <div className="rm-search-add-section">
           <div className="rm-search-box">
-            <span className="rm-search-icon">🔍</span>
+            <span className="rm-search-icon"><img src="/icon_LTW/TimKiem.png" alt="#"></img></span>
             <input
               type="text"
               placeholder="Tìm theo số phòng"
@@ -152,7 +163,7 @@ const RoomManagement = () => {
                   <td>{room.roomType}</td>
                   <td>
                     <button className="rm-edit-btn" onClick={() => handleEdit(room.id)}>
-                      <span className="rm-edit-icon">✏️</span>
+                      <span className="rm-edit-icon"><img src="/icon_LTW/Edit.png" alt="#"></img></span>
                     </button>
                   </td>
                   <td>
@@ -160,7 +171,7 @@ const RoomManagement = () => {
                       className="rm-delete-btn"
                       onClick={() => handleDelete(room.id)}
                     >
-                      <span className="rm-delete-icon">🗑️</span>
+                      <span className="rm-delete-icon"><img src="/icon_LTW/Xoa.png" alt="#"></img></span>
                     </button>
                   </td>
                 </tr>
@@ -177,7 +188,7 @@ const RoomManagement = () => {
             <div className="cm-modal-content">
               <div className="cm-form-container">
                 <div className="cm-form-field">
-                  <span className="cm-field-icon">🏠</span>
+                  <span className="cm-field-icon"><img src="/icon_LTW/QLP_SoPhong.png" alt="#"></img></span>
                   <input
                     type="text"
                     placeholder="Số phòng"
@@ -193,7 +204,7 @@ const RoomManagement = () => {
                   />
                 </div>
                 <div className="cm-form-field">
-                  <span className="cm-field-icon">📋</span>
+                  <span className="cm-field-icon"><img src="/icon_LTW/QLP_SuaPhong.png" alt="#"></img></span>
                   <select
                     value={selectedRoom ? selectedRoom.status : newRoom.status}
                     onChange={(e) => {
@@ -212,7 +223,7 @@ const RoomManagement = () => {
                   </select>
                 </div>
                 <div className="cm-form-field">
-                  <span className="cm-field-icon">🛏️</span>
+                  <span className="cm-field-icon"><img src="/icon_LTW/QLP_SuaPhong2.png" alt="#"></img></span>
                   <select
                     value={selectedRoom ? selectedRoom.roomType : newRoom.roomType}
                     onChange={(e) => {
@@ -239,29 +250,11 @@ const RoomManagement = () => {
           </div>
         </div>
       )}
-      {showLogoutConfirm && (
-        <div className="logout-modal">
-          <div className="logout-modal-content">
-            <span className="close-icon" onClick={() => setShowLogoutConfirm(false)}>X</span>
-            <div className="logout-modal-header">
-              <span className="header-text">Thông Báo</span>
-            </div>
-            <p className="logout-message">Bạn có muốn đăng xuất?</p>
-            <div className="logout-modal-buttons">
-              <button className="confirm-button" onClick={() => setShowLogoutConfirm(false)}>
-                YES
-              </button>
-              <button className="cancel-button" onClick={() => setShowLogoutConfirm(false)}>
-                NO
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+     
       {showSaveConfirm && (
         <div className="logout-modal">
           <div className="logout-modal-content">
-            <span className="close-icon" onClick={() => setShowSaveConfirm(false)}>X</span>
+            <span className="close-icon" onClick={() => setShowSaveConfirm(false)}><img src="/icon_LTW/FontistoClose.png" alt="#"></img></span>
             <div className="logout-modal-header">
               <span className="header-text">Thông Báo</span>
             </div>
@@ -284,7 +277,7 @@ const RoomManagement = () => {
       {showDeleteConfirm && roomToDelete && (
         <div className="logout-modal">
           <div className="logout-modal-content">
-            <span className="close-icon" onClick={() => setShowDeleteConfirm(false)}>X</span>
+            <span className="close-icon" onClick={() => setShowDeleteConfirm(false)}><img src="/icon_LTW/FontistoClose.png" alt="#"></img></span>
             <div className="logout-modal-header">
               <span className="header-text">Thông Báo</span>
             </div>
@@ -303,7 +296,7 @@ const RoomManagement = () => {
       {showDeleteSuccess && (
         <div className="logout-modal">
           <div className="logout-modal-content">
-            <span className="close-icon" onClick={() => setShowDeleteSuccess(false)}>X</span>
+            <span className="close-icon" onClick={() => setShowDeleteSuccess(false)}><img src="/icon_LTW/FontistoClose.png" alt="#"></img></span>
             <div className="logout-modal-header">
               <span className="header-text">Thông Báo</span>
             </div>

@@ -1,7 +1,8 @@
+// RoomCard.js
 import React from 'react';
-import './RoomCard.css';
+import '../Components_Css/RoomCard.css';
 
-const RoomCard = ({ roomNumber, status, date, roomType, condition }) => {
+const RoomCard = ({ roomNumber, status, date, roomType, condition, guestName = '', onClick }) => {
   const getStatusClass = () => {
     switch (status) {
       case 'Phòng trống':
@@ -18,28 +19,32 @@ const RoomCard = ({ roomNumber, status, date, roomType, condition }) => {
   const getStatusIcon = () => {
     switch (status) {
       case 'Phòng trống':
-        return '✖';
+        return <img src="/icon_LTW/thoat.png" alt="#" />;
       case 'Phòng đã đặt':
-        return '✓';
+        return <img src="/icon_LTW/IonCheckmarkCircled.png" alt="#" />;
       case 'Phòng đang thuê':
-        return '👤';
+        return <img src="/icon_LTW/IonPeopleCircle.png" alt="#" />;
       default:
         return '';
     }
   };
 
   return (
-    <div className={`room-card ${getStatusClass()}`}>
+    <div className={`room-card ${getStatusClass()}`} onClick={onClick}>
       <div className="room-header">
-        <span>{roomNumber} ({roomType})</span>
+        <span>{roomNumber}</span>
         <span className="status-text">{status}</span>
       </div>
       <div className="room-content">
         <span className="status-icon">{getStatusIcon()}</span>
-        <span className="content-status">{status}</span>
+        {guestName && <span className="guest-name">{guestName}</span>}
+        {!guestName && <span className="content-status">{status}</span>}
       </div>
       <div className="room-footer">
-        <span>📅 {date}</span>
+        <div className="footer-calendar">
+          <img src="/icon_LTW/PixelCalenderSolid.png" alt="#" />
+          <span>{date}</span>
+        </div>
         <span>{condition}</span>
       </div>
     </div>

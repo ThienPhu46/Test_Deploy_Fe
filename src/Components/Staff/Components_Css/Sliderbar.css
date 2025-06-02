@@ -1,0 +1,138 @@
+/* Sidebar */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 320px;
+  height: 100vh;
+  background-color: #fff;
+  color: #0a3d8b;
+  transform: translateX(-100%);
+  transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease-in-out;
+  opacity: 0;
+  z-index: 1000;
+  box-sizing: border-box;
+  overflow-y: auto;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar.open {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.sidebar-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 20px;
+  background-color: #002865;
+  color: #fff;
+  border-bottom: 2px solid #0a3d8b;
+  position: relative;
+  min-height: 150px;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.sb-close-icon img {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  color: #fff;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.sidebar-header .avatar-placeholder img {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background-color: #fff;
+  border: 3px solid #fff;
+  margin-bottom: 15px;
+  cursor: pointer;
+}
+
+.sidebar-header p {
+  margin: 0;
+  font-size: 25px;
+  font-weight: 500;
+}
+
+.sidebar-menu {
+  list-style: none;
+  padding: 0 20px;
+  margin: 0;
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out 0.1s;
+}
+
+.sidebar.open .sidebar-menu {
+  opacity: 1;
+}
+
+.sidebar-menu li {
+  padding: 15px 0;
+  font-size: 20px;
+  font-weight: 400;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  color: #0a3d8b;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.sidebar-menu li:hover {
+  background-color: rgba(10, 61, 139, 0.1);
+  transform: translateX(5px);
+}
+
+.sidebar-menu img {
+  margin-right: 10px;
+  width: 30px;
+  height: 30px;
+  color: #0a3d8b;
+  transition: transform 0.2s ease;
+}
+
+.sidebar-menu li:hover .menu-icon {
+  transform: scale(1.2);
+}
+
+.sidebar-menu li a {
+  text-decoration: none;
+  color: black;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.sidebar-menu li a:hover {
+  color: inherit;
+}
+
+.sidebar-menu-button {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 20px;
+  font-weight: 400;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  color: #0a3d8b;
+  width: 100%;
+  text-align: left;
+}
+
+.sidebar-menu-button:hover {
+  background-color: rgba(10, 61, 139, 0.1);
+  transform: translateX(5px);
+}
+
+.sidebar-menu-button  {
+  color: black;
+}

@@ -45,6 +45,7 @@
   cursor: pointer;
   color: #000;
 }
+
 .rtm-content-wrapper {
   background-color: #ffffff;
   padding: 1rem;
@@ -67,12 +68,13 @@
 .rtm-search-box {
   display: flex;
   align-items: center;
-  background-color: #dedede;
+  background-color: #ffffff;
   border-radius: 0.3rem;
   padding: 0.3rem 0.6rem;
   width: 100%;
   max-width: 300px;
   box-sizing: border-box;
+  box-shadow: 0px 4px 10px 0px rgba(0, 0, 0, 0.25);
 }
 
 .rtm-search-box input {
@@ -84,9 +86,10 @@
   color: #141414;
 }
 
-.rtm-search-icon {
+.rtm-search-icon img {
   margin-right: 0.6rem;
-  font-size: 1rem;
+  width: 25px;
+  height: 25px;
 }
 
 .rtm-add-type-btn {
@@ -142,27 +145,32 @@
   border-bottom: none;
 }
 
-.rtm-edit-btn, .rtm-delete-btn {
+/* Loại bỏ viền và nền của nút edit/delete */
+.rtm-edit-btn,
+.rtm-delete-btn {
   background: none;
   border: none;
+  padding: 0;
   cursor: pointer;
-  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.rtm-edit-icon {
-  color: #00cc00;
+.rtm-edit-btn img,
+.rtm-delete-btn img {
+  cursor: pointer;
+  width: 25px;
+  height: 25px;
 }
 
-.rtm-delete-icon {
-  color: #ff4444;
+/* Hiệu ứng hover cho mỗi hàng trong bảng */
+.rtm-type-table tr {
+  transition: background-color 0.2s ease;
 }
 
-.rtm-edit-btn:hover .rtm-edit-icon {
-  color: #00e600;
-}
-
-.rtm-delete-btn:hover .rtm-delete-icon {
-  color: #ff6666;
+.rtm-type-table tr:hover {
+  background-color: #d3d3d3;
 }
 
 .rtm-edit-modal-wrapper,
@@ -206,11 +214,10 @@
   width: 100%;
 }
 
-.rtm-field-icon {
+.rtm-field-icon img {
   margin-right: 0.5rem;
-  font-size: 1.2rem;
-  color: #555;
-  width: 30px;
+  width: 25px;
+  height: 25px;
   text-align: center;
 }
 
@@ -306,7 +313,6 @@
   position: relative;
 }
 
-.rtm-close-icon,
 .rtm-close-icon {
   position: absolute;
   top: 0.5rem;

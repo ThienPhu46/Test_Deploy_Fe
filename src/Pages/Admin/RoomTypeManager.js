@@ -1,17 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import '../../Design_Css/Admin/RoomTypeManager.css';
-import Sidebar from '../../Components/Admin/Sliderbar';
+import Sidebar from '../../Components/Admin/Components_Js/Sliderbar';
+import LogoutModal from '../../Components/Admin/Components_Js/LogoutModal';
+
 const RoomTypeManagement = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedType, setSelectedType] = useState(null);
   const [newType, setNewType] = useState({
-    typeCode: '',
     typeName: '',
     bedCount: '',
     dayPrice: '',
-    hourPrice: ''
+    description: '' // Xóa hourPrice
   });
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -19,16 +20,64 @@ const RoomTypeManagement = () => {
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showAddSuccess, setShowAddSuccess] = useState(false);
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
-  
+  const [roomTypes, setRoomTypes] = useState([]);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const roomTypes = [
-    { id: 'TP01', typeCode: '1', typeName: 'Phòng đơn', bedCount: 1, dayPrice: '300,000 VND', hourPrice: '60,000 VND' },
-    { id: 'TP02', typeCode: '2', typeName: 'Phòng đôi', bedCount: 2, dayPrice: '450,000 VND', hourPrice: '80,000 VND' },
-    { id: 'TP03', typeCode: '3', typeName: 'Phòng gia đình', bedCount: 3, dayPrice: '650,000 VND', hourPrice: '100,000 VND' },
-  ];
+  const API_BASE_URL = 'http://localhost:5282';
+
+  const fetchRoomTypes = useCallback(async () => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/room-types?searchTerm=${searchTerm}&sortBy=MaLoaiPhong&sortOrder=ASC`
+      );
+      const contentType = response.headers.get('content-type');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Lỗi HTTP: ${response.status} - ${response.statusText}. Chi tiết: ${errorText.substring(0, 200)}`);
+      }
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        throw new Error('Phản hồi từ server không phải là JSON hợp lệ: ' + text.substring(0, 200));
+      }
+      const result = await response.json();
+      console.log('API Response:', result);
+      if (result.success) {
+        const typeData = result.data || [];
+        console.log('Room Type Data:', typeData);
+        if (!Array.isArray(typeData)) {
+          throw new Error('Dữ liệu loại phòng không phải là mảng');
+        }
+        const validatedData = typeData.map((type, index) => ({
+          id: type.maLoaiPhong || `TEMP_${index}`,
+          typeCode: type.maLoaiPhong || `TEMP_${index}`,
+          typeName: type.tenLoaiPhong || 'N/A',
+          bedCount: type.moTa?.match(/(\d+)\s*giường/)?.[1] || 1,
+          dayPrice: type.giaPhong !== undefined ? `${parseFloat(type.giaPhong).toLocaleString('vi-VN')} VND` : '0 VND',
+          hourPrice: type.giaGio !== undefined ? `${parseFloat(type.giaGio).toLocaleString('vi-VN')} VND` : '0 VND', // Lấy từ API
+          description: type.moTa || ''
+        }));
+        setRoomTypes(validatedData);
+        setErrorMessage('');
+      } else {
+        throw new Error(result.message || 'Không thể tải danh sách loại phòng');
+      }
+    } catch (error) {
+      console.error('Lỗi khi gọi API:', error);
+      setErrorMessage(error.message);
+      setRoomTypes([]);
+    }
+  }, [searchTerm]);
+
+  useEffect(() => {
+    fetchRoomTypes();
+  }, [fetchRoomTypes]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutConfirm(false);
   };
 
   const handleSearch = (e) => {
@@ -37,7 +86,13 @@ const RoomTypeManagement = () => {
 
   const handleEdit = (id) => {
     const type = roomTypes.find((t) => t.id === id);
-    setSelectedType(type);
+    setSelectedType({
+      id: type.id,
+      typeName: type.typeName,
+      bedCount: type.bedCount,
+      dayPrice: type.dayPrice.replace(' VND', '').replace(/\./g, ''),
+      description: type.description // Xóa hourPrice
+    });
     setShowEditModal(true);
   };
 
@@ -47,63 +102,162 @@ const RoomTypeManagement = () => {
 
   const handleDelete = (id) => {
     const type = roomTypes.find((t) => t.id === id);
+    const exists = roomTypes.some(t => t.id === id);
+    if (!exists) {
+      setErrorMessage('Loại phòng không tồn tại hoặc đã bị xóa!');
+      return;
+    }
     setTypeToDelete(type);
     setShowDeleteConfirm(true);
   };
 
-    const handleConfirmDelete = () => {
-    console.log(`Xóa loại phòng ${typeToDelete.id}`);
-    setShowDeleteConfirm(false);
-     setShowDeleteSuccess(true);
+  const handleConfirmDelete = async () => {
+    try {
+      if (!typeToDelete) {
+        setErrorMessage('Không có loại phòng nào được chọn để xóa!');
+        setShowDeleteConfirm(false);
+        return;
+      }
 
+      const response = await fetch(`${API_BASE_URL}/api/room-types/${typeToDelete.id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        const errorMessage = errorText.includes('khong ton tai') 
+          ? 'Mã loại phòng không tồn tại!'
+          : `Lỗi HTTP: ${response.status} - ${response.statusText}. Chi tiết: ${errorText.substring(0, 200)}`;
+        throw new Error(errorMessage);
+      }
+      const result = await response.json();
+      if (result.success) {
+        setShowDeleteConfirm(false);
+        setShowDeleteSuccess(true);
+        fetchRoomTypes();
+      } else {
+        throw new Error(result.message || 'Xóa loại phòng thất bại');
+      }
+    } catch (error) {
+      console.error('Lỗi khi gọi API xóa:', error);
+      setErrorMessage(error.message);
+      setShowDeleteConfirm(false);
+    }
   };
 
   const handleAddType = () => {
     setNewType({
-      typeCode: '',
       typeName: '',
       bedCount: '',
       dayPrice: '',
-      hourPrice: ''
+      description: '' // Xóa hourPrice
     });
     setSelectedType(null);
     setShowEditModal(true);
+    setErrorMessage('');
   };
 
-  const handleSave = () => {
-    if (selectedType) {
-      console.log('Lưu thông tin loại phòng:', selectedType);
-    } else {
-      console.log('Thêm loại phòng mới:', newType);
-      setShowAddSuccess(true);
+  const handleConfirmLogout = () => {
+    console.log("Người dùng đã đăng xuất");
+    setShowLogoutConfirm(false);
+    window.location.href = '/';
+  };
+
+  const handleSave = async () => {
+    try {
+      if (!selectedType) {
+        const isDuplicate = roomTypes.some(
+          (type) => type.typeName.toLowerCase() === newType.typeName.toLowerCase()
+        );
+        if (isDuplicate) {
+          setErrorMessage('Tên loại phòng đã tồn tại. Vui lòng chọn tên khác.');
+          return;
+        }
+      }
+
+      if (selectedType) {
+        const roomTypeData = {
+          maLoaiPhong: selectedType.id,
+          tenLoaiPhong: selectedType.typeName,
+          giaPhong: parseFloat(selectedType.dayPrice.replace(/[^0-9.-]+/g, '')),
+          moTa: `${selectedType.bedCount} giường${selectedType.description ? `, ${selectedType.description}` : ''}`
+        };
+
+        const response = await fetch(`${API_BASE_URL}/api/room-types/${selectedType.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(roomTypeData),
+        });
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Lỗi HTTP: ${response.status} - ${response.statusText}. Chi tiết: ${errorText}`);
+        }
+        const result = await response.json();
+        console.log('PUT Response:', result);
+        if (result.success) {
+          setShowEditModal(false);
+          setShowSaveConfirm(true);
+          fetchRoomTypes();
+        } else {
+          throw new Error(result.message || 'Cập nhật loại phòng thất bại');
+        }
+      } else {
+        const roomTypeData = {
+          tenLoaiPhong: newType.typeName,
+          giaPhong: parseFloat(newType.dayPrice.replace(/[^0-9.-]+/g, '')),
+          moTa: `${newType.bedCount} giường${newType.description ? `, ${newType.description}` : ''}`
+        };
+
+        const response = await fetch(`${API_BASE_URL}/api/room-types`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(roomTypeData),
+        });
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Lỗi HTTP: ${response.status} - ${response.statusText}. Chi tiết: ${errorText}`);
+        }
+        const result = await response.json();
+        console.log('POST Response:', result);
+        if (result.success) {
+          setShowEditModal(false);
+          setShowSaveConfirm(true);
+          setShowAddSuccess(true);
+          fetchRoomTypes();
+        } else {
+          throw new Error(result.message || 'Thêm loại phòng thất bại');
+        }
+      }
+    } catch (error) {
+      console.error('Lỗi khi gọi API:', error);
+      setErrorMessage(error.message || 'Đã xảy ra lỗi khi lưu loại phòng');
     }
-    setShowEditModal(false);
-    setShowSaveConfirm(true);
   };
 
   const handleCancel = () => {
     setShowEditModal(false);
     setSelectedType(null);
     setNewType({
-      typeCode: '',
       typeName: '',
       bedCount: '',
       dayPrice: '',
-      hourPrice: ''
+      description: '' // Xóa hourPrice
     });
+    setErrorMessage('');
   };
 
   return (
     <div className="rtm-main-container">
-        <Sidebar 
-        isSidebarOpen={isSidebarOpen} 
-        toggleSidebar={toggleSidebar} 
-        onLogoutClick={() => setShowLogoutConfirm(true)} 
+      <Sidebar
+        isSidebarOpen={isSidebarOpen}
+        toggleSidebar={toggleSidebar}
+        onLogoutClick={() => setShowLogoutConfirm(true)}
       />
-      <div className="sidebar">
-        <button onClick={() => setShowLogoutConfirm(true)}>Đăng xuất</button>
-      </div>
-       <div className="top-header">
+      <LogoutModal 
+        isOpen={showLogoutConfirm}
+        onConfirm={handleConfirmLogout}
+        onCancel={handleCancelLogout}
+      />
+      <div className="top-header">
         <div className="top-title-container">
           <div className="menu-icon" onClick={toggleSidebar}>☰</div>
           <div className="top-title">Quản Lý Loại Phòng</div>
@@ -111,11 +265,15 @@ const RoomTypeManagement = () => {
         <div className="more-icon" onClick={() => console.log('Mở tùy chọn bổ sung')}>⋮</div>
       </div>
 
-
       <div className="rtm-content-wrapper">
+        {errorMessage && (
+          <div className="rtm-error-message">
+            {errorMessage}
+          </div>
+        )}
         <div className="rtm-search-add-section">
           <div className="rtm-search-box">
-            <span className="rtm-search-icon">🔍</span>
+            <span className="rtm-search-icon"><img src="/icon_LTW/TimKiem.png" alt="#" /></span>
             <input
               type="text"
               placeholder="Tìm theo tên loại phòng"
@@ -142,25 +300,31 @@ const RoomTypeManagement = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredTypes.map((type) => (
-                <tr key={type.id}>
-                  <td>{type.typeCode}</td>
-                  <td>{type.typeName}</td>
-                  <td>{type.bedCount}</td>
-                  <td>{type.dayPrice}</td>
-                  <td>{type.hourPrice}</td>
-                  <td>
-                    <button className="rtm-edit-btn" onClick={() => handleEdit(type.id)}>
-                      <span className="rtm-edit-icon">✏️</span>
-                    </button>
-                  </td>
-                  <td>
-                    <button className="rtm-delete-btn" onClick={() => handleDelete(type.id)}>
-                      <span className="rtm-delete-icon">🗑️</span>
-                    </button>
-                  </td>
+              {filteredTypes.length > 0 ? (
+                filteredTypes.map((type) => (
+                  <tr key={type.id}>
+                    <td>{type.typeCode}</td>
+                    <td>{type.typeName}</td>
+                    <td>{type.bedCount}</td>
+                    <td>{type.dayPrice}</td>
+                    <td>{type.hourPrice}</td>
+                    <td>
+                      <button className="rtm-edit-btn" onClick={() => handleEdit(type.id)}>
+                        <span className="rtm-edit-icon"><img src="/icon_LTW/Edit.png" alt="#" /></span>
+                      </button>
+                    </td>
+                    <td>
+                      <button className="rtm-delete-btn" onClick={() => handleDelete(type.id)}>
+                        <span className="rtm-delete-icon"><img src="/icon_LTW/Xoa.png" alt="#" /></span>
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7">Không có dữ liệu để hiển thị</td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
@@ -173,23 +337,7 @@ const RoomTypeManagement = () => {
             <div className="rtm-modal-content">
               <div className="rtm-form-container">
                 <div className="rtm-form-field">
-                  <span className="rtm-field-icon">🔢</span>
-                  <input
-                    type="text"
-                    placeholder="Mã loại phòng"
-                    value={selectedType ? selectedType.typeCode : newType.typeCode}
-                    onChange={(e) => {
-                      if (selectedType) {
-                        setSelectedType({ ...selectedType, typeCode: e.target.value });
-                      } else {
-                        setNewType({ ...newType, typeCode: e.target.value });
-                      }
-                    }}
-                    className="rtm-input-field"
-                  />
-                </div>
-                <div className="rtm-form-field">
-                  <span className="rtm-field-icon">🏷️</span>
+                  <span className="rtm-field-icon"><img src="/icon_LTW/QLLP_ThemPhong.png" alt="#" /></span>
                   <input
                     type="text"
                     placeholder="Tên loại phòng"
@@ -205,7 +353,7 @@ const RoomTypeManagement = () => {
                   />
                 </div>
                 <div className="rtm-form-field">
-                  <span className="rtm-field-icon">🛏️</span>
+                  <span className="rtm-field-icon"><img src="/icon_LTW/QLLP_DatPhong2.png" alt="#" /></span>
                   <input
                     type="number"
                     placeholder="Số giường"
@@ -221,7 +369,7 @@ const RoomTypeManagement = () => {
                   />
                 </div>
                 <div className="rtm-form-field">
-                  <span className="rtm-field-icon">💰</span>
+                  <span className="rtm-field-icon"><img src="/icon_LTW/QLLP_DatPhong3.png" alt="#" /></span>
                   <input
                     type="text"
                     placeholder="Giá ngày"
@@ -237,16 +385,16 @@ const RoomTypeManagement = () => {
                   />
                 </div>
                 <div className="rtm-form-field">
-                  <span className="rtm-field-icon">⏰</span>
+                  <span className="rtm-field-icon"><img src="/icon_LTW/QLLP_ThemPhong.png" alt="#" /></span>
                   <input
                     type="text"
-                    placeholder="Giá giờ"
-                    value={selectedType ? selectedType.hourPrice : newType.hourPrice}
+                    placeholder="Mô tả (nếu có)"
+                    value={selectedType ? selectedType.description : newType.description}
                     onChange={(e) => {
                       if (selectedType) {
-                        setSelectedType({ ...selectedType, hourPrice: e.target.value });
+                        setSelectedType({ ...selectedType, description: e.target.value });
                       } else {
-                        setNewType({ ...newType, hourPrice: e.target.value });
+                        setNewType({ ...newType, description: e.target.value });
                       }
                     }}
                     className="rtm-input-field"
@@ -265,7 +413,7 @@ const RoomTypeManagement = () => {
       {showDeleteConfirm && typeToDelete && (
         <div className="logout-modal">
           <div className="logout-modal-content">
-            <span className="close-icon" onClick={() => setShowDeleteConfirm(false)}>X</span>
+            <span className="close-icon" onClick={() => setShowDeleteConfirm(false)}><img src="/icon_LTW/FontistoClose.png" alt="#" /></span>
             <div className="logout-modal-header">
               <span className="header-text">Thông Báo</span>
             </div>
@@ -285,7 +433,7 @@ const RoomTypeManagement = () => {
       {showSaveConfirm && (
         <div className="logout-modal">
           <div className="logout-modal-content">
-            <span className="close-icon" onClick={() => setShowSaveConfirm(false)}>X</span>
+            <span className="close-icon" onClick={() => setShowSaveConfirm(false)}><img src="/icon_LTW/FontistoClose.png" alt="#" /></span>
             <div className="logout-modal-header">
               <span className="header-text">Thông Báo</span>
             </div>
@@ -306,29 +454,10 @@ const RoomTypeManagement = () => {
         </div>
       )}
 
-      {showLogoutConfirm && (
+      {showDeleteSuccess && (
         <div className="logout-modal">
           <div className="logout-modal-content">
-            <span className="close-icon" onClick={() => setShowLogoutConfirm(false)}>X</span>
-            <div className="logout-modal-header">
-              <span className="header-text">Thông Báo</span>
-            </div>
-            <p className="logout-message">Bạn có muốn đăng xuất?</p>
-            <div className="logout-modal-buttons">
-              <button className="confirm-button" onClick={() => setShowLogoutConfirm(false)}>
-                YES
-              </button>
-              <button className="cancel-button" onClick={() => setShowLogoutConfirm(false)}>
-                NO
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-       {showDeleteSuccess && (
-        <div className="logout-modal">
-          <div className="logout-modal-content">
-            <span className="close-icon" onClick={() => setShowDeleteSuccess(false)}>X</span>
+            <span className="close-icon" onClick={() => setShowDeleteSuccess(false)}><img src="/icon_LTW/FontistoClose.png" alt="#" /></span>
             <div className="logout-modal-header">
               <span className="header-text">Thông Báo</span>
             </div>

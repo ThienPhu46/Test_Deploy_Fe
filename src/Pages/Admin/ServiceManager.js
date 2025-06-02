@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import '../../Design_Css/Admin/ServiceManager.css';
-import Sidebar from '../../Components/Admin/Sliderbar';
+import Sidebar from '../../Components/Admin/Components_Js/Sliderbar';
+import LogoutModal from '../../Components/Admin/Components_Js/LogoutModal';
 
 const ServiceManagement = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -8,30 +9,71 @@ const ServiceManagement = () => {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedService, setSelectedService] = useState(null);
   const [newService, setNewService] = useState({
-    serviceCode: '',
-    serviceName: '',
-    serviceType: '',
-    unitPrice: ''
+    tenDichVu: '',
+    maLoaiDV: '',
+    gia: ''
   });
+  const [services, setServices] = useState([]);
+  const [serviceTypes, setServiceTypes] = useState([]);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showAddSuccess, setShowAddSuccess] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
+  const [showDeleteError, setShowDeleteError] = useState(false);
+  const [showInputError, setShowInputError] = useState(false);
+  const [showDuplicateError, setShowDuplicateError] = useState(false); // Thêm state mới
   const [serviceToDelete, setServiceToDelete] = useState(null);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const services = [
-    { serviceCode: 1, serviceName: 'Đưa đón', serviceType: 'Vận chuyển', unitPrice: '17,000 VND' },
-    { serviceCode: 2, serviceName: 'Pepsi', serviceType: 'Nước uống', unitPrice: '12,000 VND' },
-    { serviceCode: 3, serviceName: 'Sting', serviceType: 'Nước uống', unitPrice: '12,000 VND' },
-    { serviceCode: 4, serviceName: 'Cơm chiên', serviceType: 'Đồ ăn', unitPrice: '30,000 VND' },
-    { serviceCode: 5, serviceName: 'Mì xào', serviceType: 'Đồ ăn', unitPrice: '25,000 VND' },
-    { serviceCode: 6, serviceName: 'Đưa đón sân bay', serviceType: 'Vận chuyển', unitPrice: '200,000 VND' },
-    { serviceCode: 7, serviceName: 'Karaoke', serviceType: 'Giải trí', unitPrice: '150,000 VND' },
-    { serviceCode: 8, serviceName: 'Chuyển đồ', serviceType: 'Vận chuyển', unitPrice: '100,000 VND' },
-    { serviceCode: 9, serviceName: 'Bún bò', serviceType: 'Đồ ăn', unitPrice: '30,000 VND' },
-    { serviceCode: 10, serviceName: 'Mì quảng', serviceType: 'Đồ ăn', unitPrice: '25,000 VND' }
-  ];
+  const API_BASE_URL = 'http://localhost:5282';
+
+  const fetchServiceTypes = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/service-types?pageNumber=1&pageSize=100`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Lỗi HTTP: ${response.status} - ${response.statusText}`);
+      }
+      const result = await response.json();
+      if (result.success) {
+        setServiceTypes(result.data || []);
+      } else {
+        throw new Error(result.message || 'Không thể tải danh sách loại dịch vụ');
+      }
+    } catch (error) {
+      console.error('Lỗi khi gọi API loại dịch vụ:', error);
+      setErrorMessage(error.message);
+    }
+  }, []);
+
+  const fetchServices = useCallback(async () => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/services?searchTerm=${searchTerm}&sortBy=MaDichVu&sortOrder=ASC`
+      );
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Lỗi HTTP: ${response.status} - ${response.statusText}`);
+      }
+      const result = await response.json();
+      if (result.success) {
+        setServices(result.data || []);
+        setErrorMessage('');
+      } else {
+        throw new Error(result.message || 'Không thể tải danh sách dịch vụ');
+      }
+    } catch (error) {
+      console.error('Lỗi khi gọi API:', error);
+      setErrorMessage(error.message);
+      setServices([]);
+    }
+  }, [searchTerm]);
+
+  useEffect(() => {
+    fetchServiceTypes();
+    fetchServices();
+  }, [fetchServiceTypes, fetchServices]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -41,16 +83,187 @@ const ServiceManagement = () => {
     setSearchTerm(e.target.value);
   };
 
-  const filteredServices = services.filter((service) =>
-    service.serviceName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleEdit = (service) => {
+    setSelectedService({
+      maDichVu: service.maDichVu,
+      tenDichVu: service.tenDichVu,
+      maLoaiDV: serviceTypes.find(type => type.tenLoaiDV === service.tenLoaiDV)?.maLoaiDV || '',
+      tenLoaiDV: service.tenLoaiDV,
+      gia: service.gia.toString()
+    });
+    setShowDetailsModal(true);
+  };
+
+  const handleDelete = (service) => {
+    setServiceToDelete(service);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!serviceToDelete) {
+      setErrorMessage('Không có dịch vụ nào được chọn để xóa!');
+      setShowDeleteConfirm(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/services/${serviceToDelete.maDichVu}`, {
+        method: 'DELETE',
+      });
+
+      setShowDeleteConfirm(false);
+
+      if (!response.ok) {
+        let errorMsg = `Lỗi HTTP: ${response.status} - ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMsg = errorData.message || errorMsg;
+        } catch (parseError) {
+          console.warn('Không thể parse JSON từ phản hồi lỗi:', parseError);
+        }
+
+        if (
+          (response.status === 400 || response.status === 409) &&
+          (errorMsg.includes('đang được sử dụng') || errorMsg.includes('foreign key'))
+        ) {
+          setShowDeleteError(true);
+        } else {
+          setErrorMessage(errorMsg);
+        }
+        console.error('Lỗi xóa dịch vụ:', { status: response.status, message: errorMsg });
+        return;
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        setShowDeleteSuccess(true);
+        fetchServices();
+      } else {
+        setErrorMessage(result.message || 'Xóa dịch vụ thất bại');
+        console.error('API trả về thất bại:', result);
+      }
+    } catch (error) {
+      console.error('Lỗi khi gọi API xóa:', error);
+      setErrorMessage(error.message || 'Lỗi không xác định khi xóa dịch vụ');
+    }
+  };
+
+  const handleAddService = () => {
+    setNewService({
+      tenDichVu: '',
+      maLoaiDV: '',
+      gia: ''
+    });
+    setSelectedService(null);
+    setShowDetailsModal(true);
+  };
+
+  const validateServiceData = (serviceData) => {
+    if (!serviceData.tenDichVu.trim()) return 'Vui lòng nhập tên dịch vụ.';
+    if (!serviceData.maLoaiDV) return 'Vui lòng chọn loại dịch vụ.';
+    if (!serviceData.gia || parseFloat(serviceData.gia) <= 0) return 'Vui lòng nhập đơn giá hợp lệ.';
+    if (!selectedService) {
+      const isDuplicate = services.some(
+        (service) => service.tenDichVu.toLowerCase() === serviceData.tenDichVu.trim().toLowerCase()
+      );
+      if (isDuplicate) return 'duplicate'; // Trả về 'duplicate' để xử lý modal
+    }
+    return null;
+  };
+
+  const handleSave = async () => {
+    const serviceData = selectedService || newService;
+    const validationError = validateServiceData(serviceData);
+    if (validationError) {
+      if (validationError === 'duplicate') {
+        setShowDuplicateError(true); // Hiển thị modal lỗi trùng lặp
+      } else {
+        setShowInputError(true); // Hiển thị modal lỗi nhập liệu
+      }
+      return;
+    }
+
+    try {
+      const url = selectedService
+        ? `${API_BASE_URL}/api/services/${selectedService.maDichVu}`
+        : `${API_BASE_URL}/api/services`;
+      const method = selectedService ? 'PUT' : 'POST';
+
+      const body = {
+        tenDichVu: serviceData.tenDichVu,
+        maLoaiDV: parseInt(serviceData.maLoaiDV),
+        gia: parseFloat(serviceData.gia)
+      };
+
+      const response = await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        let errorMsg = `Lỗi HTTP: ${response.status} - ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMsg = errorData.message || errorMsg;
+          // Kiểm tra lỗi trùng lặp từ API
+          if (errorMsg.includes('đã tồn tại') || errorMsg.includes('duplicate')) {
+            setShowDuplicateError(true);
+            return;
+          }
+        } catch (parseError) {
+          console.warn('Không thể parse JSON từ phản hồi lỗi:', parseError);
+        }
+        throw new Error(errorMsg);
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        setShowDetailsModal(false);
+        setShowSaveConfirm(true);
+        setShowAddSuccess(!selectedService);
+        fetchServices();
+      } else {
+        throw new Error(result.message || (selectedService ? 'Cập nhật dịch vụ thất bại' : 'Thêm dịch vụ thất bại'));
+      }
+    } catch (error) {
+      console.error('Lỗi khi gọi API:', error);
+      setErrorMessage(error.message || 'Đã xảy ra lỗi khi lưu dịch vụ');
+    }
+  };
+
+  const handleCancel = () => {
+    setShowDetailsModal(false);
+    setSelectedService(null);
+    setNewService({
+      tenDichVu: '',
+      maLoaiDV: '',
+      gia: ''
+    });
+    setErrorMessage('');
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutConfirm(false);
+  };
+
+  const handleConfirmLogout = () => {
+    console.log('Người dùng đã đăng xuất');
+    setShowLogoutConfirm(false);
+    window.location.href = '/';
+  };
 
   return (
     <div className="sm-main-container">
-      <Sidebar 
-        isSidebarOpen={isSidebarOpen} 
-        toggleSidebar={toggleSidebar} 
-        onLogoutClick={() => setShowLogoutConfirm(true)} 
+      <Sidebar
+        isSidebarOpen={isSidebarOpen}
+        toggleSidebar={toggleSidebar}
+        onLogoutClick={() => setShowLogoutConfirm(true)}
+      />
+      <LogoutModal
+        isOpen={showLogoutConfirm}
+        onConfirm={handleConfirmLogout}
+        onCancel={handleCancelLogout}
       />
       <div className="top-header">
         <div className="top-title-container">
@@ -61,9 +274,10 @@ const ServiceManagement = () => {
       </div>
 
       <div className="sm-content-wrapper">
+        {errorMessage && <div className="sm-error-message">{errorMessage}</div>}
         <div className="sm-search-add-section">
           <div className="sm-search-box">
-            <span className="sm-search-icon">🔍</span>
+            <span className="sm-search-icon"><img src="/icon_LTW/TimKiem.png" alt="#"></img></span>
             <input
               type="text"
               placeholder="Tìm theo tên dịch vụ"
@@ -72,16 +286,7 @@ const ServiceManagement = () => {
             />
           </div>
           <div className="sv-add-action">
-            <button className="sm-add-service-btn" onClick={() => {
-              setNewService({
-                serviceCode: '',
-                serviceName: '',
-                serviceType: '',
-                unitPrice: ''
-              });
-              setSelectedService(null);
-              setShowDetailsModal(true);
-            }}>
+            <button className="sm-add-service-btn" onClick={handleAddService}>
               Thêm dịch vụ
             </button>
           </div>
@@ -100,37 +305,37 @@ const ServiceManagement = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredServices.map((service) => (
-                <tr key={service.serviceCode}>
-                  <td>{service.serviceCode}</td>
-                  <td>{service.serviceName}</td>
-                  <td>{service.serviceType}</td>
-                  <td>{service.unitPrice}</td>
-                  <td>
-                    <div className="sv-edit-action">
-                      <button className="sm-edit-btn" onClick={() => {
-                        setSelectedService(service);
-                        setShowDetailsModal(true);
-                      }}>
-                        <span className="sm-edit-icon">✏️</span>
-                      </button>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="sv-delete-action">
-                      <button
-                        className="sm-delete-btn"
-                        onClick={() => {
-                          setServiceToDelete(service);
-                          setShowDeleteConfirm(true);
-                        }}
-                      >
-                        <span className="sm-delete-icon">🗑️</span>
-                      </button>
-                    </div>
-                  </td>
+              {services.length > 0 ? (
+                services.map((service) => (
+                  <tr key={service.maDichVu}>
+                    <td>{service.maDichVu}</td>
+                    <td>{service.tenDichVu}</td>
+                    <td>{service.tenLoaiDV || 'N/A'}</td>
+                    <td>{service.gia.toLocaleString('vi-VN') + ' VNĐ'}</td>
+                    <td>
+                      <div className="sv-edit-action">
+                        <button className="sm-edit-btn" onClick={() => handleEdit(service)}>
+                          <span className="sm-edit-icon"><img src="/icon_LTW/Edit.png" alt="#"></img></span>
+                        </button>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="sv-delete-action">
+                        <button
+                          className="sm-delete-btn"
+                          onClick={() => handleDelete(service)}
+                        >
+                          <span className="sm-delete-icon"><img src="/icon_LTW/Xoa.png" alt="#"></img></span>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="6">Không có dữ liệu để hiển thị</td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
@@ -139,72 +344,57 @@ const ServiceManagement = () => {
       {showDetailsModal && (
         <div className="sv-modal-overlay">
           <div className="sv-modal-wrapper">
-            <h2 className="sv-modal-title">{selectedService ? `Sửa dịch vụ ${selectedService.serviceCode}` : 'Thêm dịch vụ'}</h2>
+            <h2 className="sv-modal-title">{selectedService ? `Sửa dịch vụ ${selectedService.maDichVu}` : 'Thêm dịch vụ'}</h2>
             <div className="sv-modal-content">
               <div className="sv-form-container">
                 <div className="sv-form-field">
-                  <span className="sv-field-icon">🔢</span>
-                  <input
-                    type="text"
-                    placeholder="Mã dịch vụ"
-                    value={selectedService ? selectedService.serviceCode : newService.serviceCode}
-                    onChange={(e) => {
-                      if (selectedService) {
-                        setSelectedService({ ...selectedService, serviceCode: e.target.value });
-                      } else {
-                        setNewService({ ...newService, serviceCode: e.target.value });
-                      }
-                    }}
-                    className="sv-input-field"
-                  />
-                </div>
-                <div className="sv-form-field">
-                  <span className="sv-field-icon">📋</span>
+                  <span className="sv-field-icon"><img src="/icon_LTW/SB_QLDichVu.png" alt="#"></img></span>
                   <input
                     type="text"
                     placeholder="Tên dịch vụ"
-                    value={selectedService ? selectedService.serviceName : newService.serviceName}
+                    value={selectedService ? selectedService.tenDichVu : newService.tenDichVu}
                     onChange={(e) => {
                       if (selectedService) {
-                        setSelectedService({ ...selectedService, serviceName: e.target.value });
+                        setSelectedService({ ...selectedService, tenDichVu: e.target.value });
                       } else {
-                        setNewService({ ...newService, serviceName: e.target.value });
+                        setNewService({ ...newService, tenDichVu: e.target.value });
                       }
                     }}
                     className="sv-input-field"
                   />
                 </div>
                 <div className="sv-form-field">
-                  <span className="sv-field-icon">🏷️</span>
+                  <span className="sv-field-icon"><img src="/icon_LTW/SB_QLLoaiDichVu.png" alt="#"></img></span>
                   <select
-                    value={selectedService ? selectedService.serviceType : newService.serviceType}
+                    value={selectedService ? selectedService.maLoaiDV : newService.maLoaiDV}
                     onChange={(e) => {
                       if (selectedService) {
-                        setSelectedService({ ...selectedService, serviceType: e.target.value });
+                        setSelectedService({ ...selectedService, maLoaiDV: e.target.value });
                       } else {
-                        setNewService({ ...newService, serviceType: e.target.value });
+                        setNewService({ ...newService, maLoaiDV: e.target.value });
                       }
                     }}
                     className="sv-select-field"
                   >
-                    <option value="" disabled>Loại dịch vụ</option>
-                    <option value="Đồ ăn">Đồ ăn</option>
-                    <option value="Nước uống">Nước uống</option>
-                    <option value="Vận chuyển">Vận chuyển</option>
-                    <option value="Giải trí">Giải trí</option>
+                    <option value="" disabled>Chọn loại dịch vụ</option>
+                    {serviceTypes.map((type) => (
+                      <option key={type.maLoaiDV} value={type.maLoaiDV}>
+                        {type.tenLoaiDV}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="sv-form-field">
-                  <span className="sv-field-icon">💰</span>
+                  <span className="sv-field-icon"><img src="/icon_LTW/QLLP_DatPhong3.png" alt="#"></img></span>
                   <input
-                    type="text"
+                    type="number"
                     placeholder="Đơn giá"
-                    value={selectedService ? selectedService.unitPrice : newService.unitPrice}
+                    value={selectedService ? selectedService.gia : newService.gia}
                     onChange={(e) => {
                       if (selectedService) {
-                        setSelectedService({ ...selectedService, unitPrice: e.target.value });
+                        setSelectedService({ ...selectedService, gia: e.target.value });
                       } else {
-                        setNewService({ ...newService, unitPrice: e.target.value });
+                        setNewService({ ...newService, gia: e.target.value });
                       }
                     }}
                     className="sv-input-field"
@@ -213,53 +403,17 @@ const ServiceManagement = () => {
               </div>
             </div>
             <div className="sv-modal-actions">
-              <button className="sv-save-btn" onClick={() => {
-                if (selectedService) {
-                  console.log('Lưu thông tin dịch vụ:', selectedService);
-                } else {
-                  console.log('Thêm dịch vụ mới:', newService);
-                  setShowAddSuccess(true);
-                }
-                setShowDetailsModal(false);
-                setShowSaveConfirm(true);
-              }}>Lưu</button>
-              <button className="sv-cancel-btn" onClick={() => {
-                setShowDetailsModal(false);
-                setSelectedService(null);
-                setNewService({
-                  serviceCode: '',
-                  serviceName: '',
-                  serviceType: '',
-                  unitPrice: ''
-                });
-              }}>Hủy bỏ</button>
+              <button className="sv-save-btn" onClick={handleSave}>Lưu</button>
+              <button className="sv-cancel-btn" onClick={handleCancel}>Hủy bỏ</button>
             </div>
           </div>
         </div>
       )}
-      {showLogoutConfirm && (
-        <div className="logout-modal">
-          <div className="logout-modal-content">
-            <span className="close-icon" onClick={() => setShowLogoutConfirm(false)}>X</span>
-            <div className="logout-modal-header">
-              <span className="header-text">Thông Báo</span>
-            </div>
-            <p className="logout-message">Bạn có muốn đăng xuất?</p>
-            <div className="logout-modal-buttons">
-              <button className="confirm-button" onClick={() => setShowLogoutConfirm(false)}>
-                YES
-              </button>
-              <button className="cancel-button" onClick={() => setShowLogoutConfirm(false)}>
-                NO
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
       {showSaveConfirm && (
         <div className="logout-modal">
           <div className="logout-modal-content">
-            <span className="close-icon" onClick={() => setShowSaveConfirm(false)}>X</span>
+            <span className="close-icon" onClick={() => setShowSaveConfirm(false)}><img src="/icon_LTW/FontistoClose.png" alt="#"></img></span>
             <div className="logout-modal-header">
               <span className="header-text">Thông Báo</span>
             </div>
@@ -279,20 +433,17 @@ const ServiceManagement = () => {
           </div>
         </div>
       )}
+
       {showDeleteConfirm && serviceToDelete && (
         <div className="logout-modal">
           <div className="logout-modal-content">
-            <span className="close-icon" onClick={() => setShowDeleteConfirm(false)}>X</span>
+            <span className="close-icon" onClick={() => setShowDeleteConfirm(false)}><img src="/icon_LTW/FontistoClose.png" alt="#"></img></span>
             <div className="logout-modal-header">
               <span className="header-text">Thông Báo</span>
             </div>
-            <p className="logout-message">Bạn có thực sự muốn xóa {serviceToDelete.serviceName}?</p>
+            <p className="logout-message">Bạn có thực sự muốn xóa {serviceToDelete.tenDichVu}?</p>
             <div className="logout-modal-buttons">
-              <button className="confirm-button" onClick={() => {
-                console.log(`Xóa dịch vụ ${serviceToDelete.serviceCode}`);
-                setShowDeleteConfirm(false);
-                setShowDeleteSuccess(true);
-              }}>
+              <button className="confirm-button" onClick={handleConfirmDelete}>
                 YES
               </button>
               <button className="cancel-button" onClick={() => setShowDeleteConfirm(false)}>
@@ -302,16 +453,68 @@ const ServiceManagement = () => {
           </div>
         </div>
       )}
+
       {showDeleteSuccess && (
         <div className="logout-modal">
           <div className="logout-modal-content">
-            <span className="close-icon" onClick={() => setShowDeleteSuccess(false)}>X</span>
+            <span className="close-icon" onClick={() => setShowDeleteSuccess(false)}><img src="/icon_LTW/FontistoClose.png" alt="#"></img></span>
             <div className="logout-modal-header">
               <span className="header-text">Thông Báo</span>
             </div>
             <p className="logout-message">Xóa thành công!</p>
             <div className="logout-modal-buttons">
               <button className="confirm-button" onClick={() => setShowDeleteSuccess(false)}>
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteError && (
+        <div className="logout-modal">
+          <div className="logout-modal-content">
+            <span className="close-icon" onClick={() => setShowDeleteError(false)}><img src="/icon_LTW/FontistoClose.png" alt="#"></img></span>
+            <div className="logout-modal-header">
+              <span className="header-text">Thông Báo</span>
+            </div>
+            <p className="logout-message">Dịch vụ này đang được sử dụng.</p>
+            <div className="logout-modal-buttons">
+              <button className="confirm-button" onClick={() => setShowDeleteError(false)}>
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showInputError && (
+        <div className="logout-modal">
+          <div className="logout-modal-content">
+            <span className="close-icon" onClick={() => setShowInputError(false)}><img src="/icon_LTW/FontistoClose.png" alt="#"></img></span>
+            <div className="logout-modal-header">
+              <span className="header-text">Thông Báo</span>
+            </div>
+            <p className="logout-message">Vui lòng nhập đầy đủ thông tin.</p>
+            <div className="logout-modal-buttons">
+              <button className="confirm-button" onClick={() => setShowInputError(false)}>
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDuplicateError && (
+        <div className="logout-modal">
+          <div className="logout-modal-content">
+            <span className="close-icon" onClick={() => setShowDuplicateError(false)}><img src="/icon_LTW/FontistoClose.png" alt="#"></img></span>
+            <div className="logout-modal-header">
+              <span className="header-text">Thông Báo</span>
+            </div>
+            <p className="logout-message">Dịch vụ với tên này đã tồn tại.</p>
+            <div className="logout-modal-buttons">
+              <button className="confirm-button" onClick={() => setShowDuplicateError(false)}>
                 OK
               </button>
             </div>

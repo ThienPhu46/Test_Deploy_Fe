@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import '../../Design_Css/Admin/AccountCustomerManager.css';
-import Sidebar from '../../Components/Admin/Sliderbar';
+import Sidebar from '../../Components/Admin/Components_Js/Sliderbar';
+import LogoutModal from '../../Components/Admin/Components_Js/LogoutModal'; // Import component mới
+
 
 const AccountCustomerManagement = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -14,10 +16,10 @@ const AccountCustomerManagement = () => {
   const [accountToDelete, setAccountToDelete] = useState(null);
 
   const accounts = [
-    { id: 1, accountId: '1', username: 'vuvanphu123', name: 'Vũ Văn Phú', email: 'vuvanphu@gmail.com',  point: '100' },
-    { id: 2, accountId: '2', username: 'tranbichhanh135',name: 'Trần Bích Hạnh', email: 'tranbichhanh@gmail.com',  point: '200' },
+    { id: 1, accountId: '1', username: 'vuvanphu123', name: 'Vũ Văn Phú', email: 'vuvanphu@gmail.com', point: '100' },
+    { id: 2, accountId: '2', username: 'tranbichhanh135', name: 'Trần Bích Hạnh', email: 'tranbichhanh@gmail.com', point: '200' },
     { id: 3, accountId: '3', username: 'levanhung246', name: 'Lê Văn Hùng', email: 'levanhung@gmail.com', point: '300' },
-    { id: 4, accountId: '4', username: 'nguyenminhtrang578',name: 'Nguyễn Minh Trang', email: 'nguyenminhtrang@gmail.com',  point: '300' },
+    { id: 4, accountId: '4', username: 'nguyenminhtrang578', name: 'Nguyễn Minh Trang', email: 'nguyenminhtrang@gmail.com', point: '300' },
     { id: 5, accountId: '5', username: 'trangiahuy999', name: 'Trần Gia Huy', email: 'trangiahuy@gmail.com', point: '400' },
   ];
 
@@ -50,7 +52,11 @@ const AccountCustomerManagement = () => {
     setShowDeleteConfirm(false);
     setShowDeleteSuccess(true);
   };
-
+  const handleConfirmLogout = () => {
+    console.log("Người dùng đã đăng xuất");
+    setShowLogoutConfirm(false);
+    window.location.href = '/'; // Điều hướng sau khi xác nhận
+  };
   const handleSave = () => {
     if (selectedAccount) {
       console.log('Lưu thông tin tài khoản:', selectedAccount);
@@ -63,13 +69,20 @@ const AccountCustomerManagement = () => {
     setShowDetailsModal(false);
     setSelectedAccount(null);
   };
-
+  const handleCancelLogout = () => {
+    setShowLogoutConfirm(false);
+  };
   return (
     <div className="acm-main-container">
-      <Sidebar 
-        isSidebarOpen={isSidebarOpen} 
-        toggleSidebar={toggleSidebar} 
-        onLogoutClick={() => setShowLogoutConfirm(true)} 
+      <Sidebar
+        isSidebarOpen={isSidebarOpen}
+        toggleSidebar={toggleSidebar}
+        onLogoutClick={() => setShowLogoutConfirm(true)}
+      />
+      <LogoutModal
+        isOpen={showLogoutConfirm}
+        onConfirm={handleConfirmLogout}
+        onCancel={handleCancelLogout}
       />
       <div className="top-header">
         <div className="top-title-container">
@@ -81,7 +94,7 @@ const AccountCustomerManagement = () => {
       <div className="acm-content-wrapper">
         <div className="acm-search-add-section">
           <div className="acm-search-box">
-            <span className="acm-search-icon">🔍</span>
+            <span className="acm-search-icon"><img src="/icon_LTW/TimKiem.png" alt="#"></img></span>
             <input
               type="text"
               placeholder="Tìm theo tên người dùng"
@@ -114,7 +127,7 @@ const AccountCustomerManagement = () => {
                   <td>{account.point}</td>
                   <td>
                     <button className="acm-edit-btn" onClick={() => handleEdit(account.id)}>
-                      <span className="acm-edit-icon">✏️</span>
+                      <span className="acm-edit-icon"><img src="/icon_LTW/Edit.png" alt="#"></img></span>
                     </button>
                   </td>
                   <td>
@@ -122,7 +135,7 @@ const AccountCustomerManagement = () => {
                       className="acm-delete-btn"
                       onClick={() => handleDelete(account.id)}
                     >
-                      <span className="acm-delete-icon">🗑️</span>
+                      <span className="acm-delete-icon"><img src="/icon_LTW/Xoa.png" alt="#"></img></span>
                     </button>
                   </td>
                 </tr>
@@ -139,7 +152,7 @@ const AccountCustomerManagement = () => {
             <div className="acm-modal-content">
               <div className="acm-form-container">
                 <div className="acm-form-field">
-                  <span className="acm-field-icon">👤</span>
+                  <span className="acm-field-icon"><img src="/icon_LTW/QLTKKH_Ten.png" alt="#"></img></span>
                   <input
                     type="text"
                     placeholder="Tên người dùng"
@@ -153,7 +166,7 @@ const AccountCustomerManagement = () => {
                   />
                 </div>
                 <div className="acm-form-field">
-                  <span className="acm-field-icon">📧</span>
+                  <span className="acm-field-icon"><img src="/icon_LTW/Email.png" alt="#"></img></span>
                   <input
                     type="email"
                     placeholder="Email"
@@ -176,29 +189,11 @@ const AccountCustomerManagement = () => {
         </div>
       )}
 
-      {showLogoutConfirm && (
-        <div className="logout-modal">
-          <div className="logout-modal-content">
-            <span className="close-icon" onClick={() => setShowLogoutConfirm(false)}>X</span>
-            <div className="logout-modal-header">
-              <span className="header-text">Thông Báo</span>
-            </div>
-            <p className="logout-message">Bạn có muốn đăng xuất?</p>
-            <div className="logout-modal-buttons">
-              <button className="confirm-button" onClick={() => setShowLogoutConfirm(false)}>
-                YES
-              </button>
-              <button className="cancel-button" onClick={() => setShowLogoutConfirm(false)}>
-                NO
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
       {showSaveConfirm && (
         <div className="logout-modal">
           <div className="logout-modal-content">
-            <span className="close-icon" onClick={() => setShowSaveConfirm(false)}>X</span>
+            <span className="close-icon" onClick={() => setShowSaveConfirm(false)}><img src="/icon_LTW/FontistoClose.png" alt="#"></img></span>
             <div className="logout-modal-header">
               <span className="header-text">Thông Báo</span>
             </div>
@@ -214,7 +209,7 @@ const AccountCustomerManagement = () => {
       {showDeleteConfirm && accountToDelete && (
         <div className="logout-modal">
           <div className="logout-modal-content">
-            <span className="close-icon" onClick={() => setShowDeleteConfirm(false)}>X</span>
+            <span className="close-icon" onClick={() => setShowDeleteConfirm(false)}><img src="/icon_LTW/FontistoClose.png" alt="#"></img></span>
             <div className="logout-modal-header">
               <span className="header-text">Thông Báo</span>
             </div>
@@ -233,7 +228,7 @@ const AccountCustomerManagement = () => {
       {showDeleteSuccess && (
         <div className="logout-modal">
           <div className="logout-modal-content">
-            <span className="close-icon" onClick={() => setShowDeleteSuccess(false)}>X</span>
+            <span className="close-icon" onClick={() => setShowDeleteSuccess(false)}><img src="/icon_LTW/FontistoClose.png" alt="#"></img></span>
             <div className="logout-modal-header">
               <span className="header-text">Thông Báo</span>
             </div>
