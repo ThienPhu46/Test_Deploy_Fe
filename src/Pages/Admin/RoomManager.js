@@ -1,121 +1,325 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
 import '../../Design_Css/Admin/RoomManager.css';
 import Sidebar from '../../Components/Admin/Components_Js/Sliderbar';
-import LogoutModal from '../../Components/Admin/Components_Js/LogoutModal'; 
+import LogoutModal from '../../Components/Admin/Components_Js/LogoutModal';
+
 const RoomManagement = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [newRoom, setNewRoom] = useState({
-    roomNumber: '',
-    status: '',
-    roomType: ''
+    SoPhong: '',
+    TinhTrang: '',
+    LoaiPhong: '',
+    TrangThai: '',
   });
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showAddSuccess, setShowAddSuccess] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
+  const [showDuplicateRoom, setShowDuplicateRoom] = useState(false);
+  const [showConstraintError, setShowConstraintError] = useState(false);
+  const [showEmptyDataError, setShowEmptyDataError] = useState(false);
   const [roomToDelete, setRoomToDelete] = useState(null);
+  const [rooms, setRooms] = useState([]);
+  const [roomTypes, setRoomTypes] = useState([]);
+  const [error, setError] = useState(null);
 
-  const rooms = [
-    { id: 'P101', roomNumber: 'P101', status: 'Đã dọn dẹp', roomType: 'Phòng đơn' },
-    { id: 'P102', roomNumber: 'P102', status: 'Chưa dọn dẹp', roomType: 'Phòng đơn' },
-    { id: 'P103', roomNumber: 'P103', status: 'Đã dọn dẹp', roomType: 'Phòng đôi' },
-    { id: 'P104', roomNumber: 'P104', status: 'Chưa dọn dẹp', roomType: 'Phòng đôi' },
-    { id: 'P105', roomNumber: 'P105', status: 'Sửa chữa', roomType: 'Phòng đôi' },
-    { id: 'P106', roomNumber: 'P106', status: 'Đã dọn dẹp', roomType: 'Phòng đôi' },
-    { id: 'P201', roomNumber: 'P201', status: 'Chưa dọn dẹp', roomType: 'Phòng đơn' },
-    { id: 'P202', roomNumber: 'P202', status: 'Đã dọn dẹp', roomType: 'Phòng đôi' },
-    { id: 'P203', roomNumber: 'P203', status: 'Sửa chữa', roomType: 'Phòng đôi' },
-    { id: 'P204', roomNumber: 'P204', status: 'Chưa dọn dẹp', roomType: 'Phòng đôi' },
-    { id: 'P205', roomNumber: 'P205', status: 'Đã dọn dẹp', roomType: 'Phòng đôi' },
-    { id: 'P206', roomNumber: 'P206', status: 'Chưa dọn dẹp', roomType: 'Phòng đôi' },
-    { id: 'P207', roomNumber: 'P207', status: 'Sửa chữa', roomType: 'Phòng đôi' },
-    { id: 'P208', roomNumber: 'P208', status: 'Đã dọn dẹp', roomType: 'Phòng đôi' },
-    { id: 'P209', roomNumber: 'P209', status: 'Chưa dọn dẹp', roomType: 'Phòng đôi' },
-    { id: 'P210', roomNumber: 'P210', status: 'Đã dọn dẹp', roomType: 'Phòng đơn' },
-    { id: 'P301', roomNumber: 'P301', status: 'Chưa dọn dẹp', roomType: 'Phòng gia đình' },
-    { id: 'P302', roomNumber: 'P302', status: 'Sửa chữa', roomType: 'Phòng gia đình' },
-  ];
+  const API_BASE_URL = 'http://localhost:5282/api';
+
+  const fetchRooms = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/rooms`, {
+        params: { searchTerm, sortBy: 'MaPhong', sortOrder: 'ASC' },
+      });
+      if (response.data.success) {
+        if (Array.isArray(response.data.data)) {
+          const mappedRooms = response.data.data.map(room => ({
+            MaPhong: room.maPhong,
+            SoPhong: room.soPhong || '',
+            GiaPhong: room.giaPhong || 0,
+            TrangThai: room.trangThai || '',
+            LoaiPhong: String(room.loaiPhong) || '',
+            TinhTrang: room.tinhTrang || '',
+          }));
+          setRooms(mappedRooms);
+          setError(null);
+        } else {
+          setError('Dữ liệu phòng không đúng định dạng.');
+          setRooms([]);
+        }
+      } else {
+        setError(response.data.message || 'Lỗi khi lấy danh sách phòng từ API.');
+        setRooms([]);
+      }
+    } catch (error) {
+      setError(`Lỗi khi lấy danh sách phòng: ${error.message}`);
+      setRooms([]);
+    }
+  }, [searchTerm]);
+
+  const fetchRoomTypes = useCallback(async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/room-types`);
+      if (response.data.success) {
+        if (Array.isArray(response.data.data)) {
+          const mappedRoomTypes = response.data.data.map(type => ({
+            MaLoaiPhong: type.maLoaiPhong,
+            TenLoaiPhong: type.tenLoaiPhong || 'Không xác định',
+            GiaPhong: type.giaPhong || 0,
+            MoTa: type.moTa || '',
+          }));
+          setRoomTypes(mappedRoomTypes);
+          setError(null);
+        } else {
+          setError('Dữ liệu loại phòng không đúng định dạng.');
+          setRoomTypes([]);
+        }
+      } else {
+        setError(response.data.message || 'Lỗi khi lấy danh sách loại phòng từ API.');
+        setRoomTypes([]);
+      }
+    } catch (error) {
+      setError(`Lỗi khi lấy danh sách loại phòng: ${error.message}`);
+      setRoomTypes([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchRooms();
+    fetchRoomTypes();
+  }, [fetchRooms, fetchRoomTypes]);
+
+  const getRoomTypeName = (loaiPhong) => {
+    const roomType = roomTypes.find((type) => String(type.MaLoaiPhong) === String(loaiPhong));
+    return roomType ? roomType.TenLoaiPhong : 'Không xác định';
+  };
+
+  const getRoomTypePrice = (loaiPhong) => {
+    const roomType = roomTypes.find((type) => String(type.MaLoaiPhong) === String(loaiPhong));
+    return roomType ? roomType.GiaPhong : 0;
+  };
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
- const handleConfirmLogout = () => {
-    console.log("Người dùng đã đăng xuất");
+
+  const handleConfirmLogout = () => {
     setShowLogoutConfirm(false);
-    window.location.href = '/'; // Điều hướng sau khi xác nhận
+    window.location.href = '/';
   };
+
+  const handleCancelLogout = () => {
+    setShowLogoutConfirm(false);
+  };
+
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
   };
 
-  const handleEdit = (id) => {
-    const room = rooms.find((r) => r.id === id);
-    setSelectedRoom(room);
-    setShowDetailsModal(true);
+  const handleEdit = async (maPhong) => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/rooms/${maPhong}`);
+      if (response.data.success && response.data.data) {
+        const roomData = response.data.data;
+        const room = {
+          MaPhong: parseInt(roomData.maPhong, 10),
+          SoPhong: roomData.soPhong || '',
+          GiaPhong: parseFloat(roomData.giaPhong) || getRoomTypePrice(roomData.loaiPhong),
+          TrangThai: roomData.trangThai || '',
+          LoaiPhong: String(roomData.loaiPhong) || '',
+          TinhTrang: roomData.tinhTrang || '',
+        };
+        setSelectedRoom(room);
+        setShowDetailsModal(true);
+        setError(null);
+      } else {
+        setError(response.data.message || 'Không tìm thấy thông tin phòng.');
+      }
+    } catch (error) {
+      setError(`Lỗi khi lấy thông tin phòng: ${error.message}`);
+      console.error('Edit fetch error:', error);
+    }
   };
-const handleCancelLogout = () => {
-    setShowLogoutConfirm(false);
-  };
-  const filteredRooms = rooms.filter((room) =>
-    room.roomNumber.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
-  const handleDelete = (id) => {
-    const room = rooms.find((r) => r.id === id);
+  const handleDelete = (maPhong) => {
+    const room = rooms.find((r) => r.MaPhong === maPhong);
     setRoomToDelete(room);
     setShowDeleteConfirm(true);
   };
 
-  const handleConfirmDelete = () => {
-    console.log(`Xóa phòng ${roomToDelete.id}`);
-    setShowDeleteConfirm(false);
-    setShowDeleteSuccess(true);
+  const handleConfirmDelete = async () => {
+    try {
+      const response = await axios.delete(`${API_BASE_URL}/rooms/${roomToDelete.MaPhong}`);
+      if (response.data.success) {
+        setShowDeleteConfirm(false);
+        setShowDeleteSuccess(true);
+        fetchRooms();
+      } else {
+        setError(response.data.message || 'Lỗi khi xóa phòng.');
+      }
+    } catch (error) {
+      // Kiểm tra lỗi ràng buộc khóa ngoại (giả sử API trả về mã lỗi 400 hoặc 409)
+      if (error.response && [400, 409].includes(error.response.status)) {
+        setShowConstraintError(true);
+      } else {
+        setError(`Không thể xóa phòng: ${error.message}`);
+      }
+      setShowDeleteConfirm(false);
+    }
   };
 
   const handleAddRoom = () => {
     setNewRoom({
-      roomNumber: '',
-      status: '',
-      roomType: ''
+      SoPhong: '',
+      TinhTrang: '',
+      LoaiPhong: '',
+      TrangThai: '',
     });
     setSelectedRoom(null);
     setShowDetailsModal(true);
   };
 
-  const handleSave = () => {
-    if (selectedRoom) {
-      console.log('Lưu thông tin phòng:', selectedRoom);
-    } else {
-      console.log('Thêm phòng mới:', newRoom);
-      setShowAddSuccess(true);
+  const validateRoomData = (room) => {
+    // Kiểm tra tất cả các trường đều trống
+    if (!room.SoPhong.trim() && !room.TinhTrang && !room.LoaiPhong && !room.TrangThai) {
+      return 'Bạn chưa nhập đầy đủ thông tin, vui lòng nhập đầy đủ thông tin';
     }
-    setShowDetailsModal(false);
-    setShowSaveConfirm(true);
+    // Kiểm tra từng trường riêng lẻ
+    if (!room.SoPhong.trim()) return 'Số phòng không được để trống';
+    if (!room.TinhTrang) return 'Tình trạng không được để trống';
+    if (!room.LoaiPhong) return 'Loại phòng không được để trống';
+    if (!room.TrangThai) return 'Trạng thái không được để trống';
+    return null;
+  };
+
+  const handleSave = async () => {
+    try {
+      const roomData = selectedRoom || newRoom;
+      const validationError = validateRoomData(roomData);
+      if (validationError) {
+        if (validationError.includes('chưa nhập đầy đủ')) {
+          setShowEmptyDataError(true);
+        } else {
+          setError(validationError);
+        }
+        return;
+      }
+
+      const loaiPhong = String(roomData.LoaiPhong);
+      const selectedRoomType = roomTypes.find(type => String(type.MaLoaiPhong) === loaiPhong);
+      if (!selectedRoomType) {
+        setError('Loại phòng không tồn tại.');
+        return;
+      }
+
+      if (!selectedRoom) {
+        // Kiểm tra trùng số phòng
+        const isDuplicate = rooms.some(room => room.SoPhong.toLowerCase() === roomData.SoPhong.trim().toLowerCase());
+        if (isDuplicate) {
+          setShowDuplicateRoom(true);
+          return;
+        }
+      }
+
+      if (selectedRoom) {
+        // Update existing room
+        const maPhong = parseInt(selectedRoom.MaPhong, 10);
+        if (isNaN(maPhong)) {
+          setError('Mã phòng không hợp lệ.');
+          return;
+        }
+
+        const updatePayload = {
+          MaPhong: maPhong,
+          SoPhong: roomData.SoPhong.trim(),
+          GiaPhong: selectedRoomType.GiaPhong,
+          TinhTrang: roomData.TinhTrang,
+          LoaiPhong: loaiPhong,
+          TrangThai: roomData.TrangThai,
+        };
+
+        console.log('Update payload:', updatePayload);
+
+        const response = await axios.put(`${API_BASE_URL}/rooms/${maPhong}`, updatePayload);
+        if (response.data.success) {
+          setShowDetailsModal(false);
+          setShowSaveConfirm(true);
+          setSelectedRoom(null);
+          fetchRooms();
+          setError(null);
+        } else {
+          setError(response.data.message || 'Lỗi khi cập nhật phòng.');
+          console.error('Update API error:', response.data);
+        }
+      } else {
+        // Add new room
+        const createPayload = {
+          SoPhong: roomData.SoPhong.trim(),
+          TinhTrang: roomData.TinhTrang,
+          LoaiPhong: parseInt(roomData.LoaiPhong, 10),
+          TrangThai: roomData.TrangThai,
+        };
+
+        console.log('Create payload:', createPayload);
+
+        const response = await axios.post(`${API_BASE_URL}/rooms`, createPayload);
+        if (response.data.success) {
+          setShowDetailsModal(false);
+          setShowAddSuccess(true);
+          setShowSaveConfirm(true);
+          fetchRooms();
+          setError(null);
+        } else {
+          setError(response.data.message || 'Lỗi khi thêm phòng.');
+          console.error('Create API error:', response.data);
+        }
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message;
+      setError(`Không thể lưu phòng: ${errorMessage}`);
+      console.error('Save error:', error);
+    }
   };
 
   const handleCancel = () => {
     setShowDetailsModal(false);
     setSelectedRoom(null);
     setNewRoom({
-      roomNumber: '',
-      status: '',
-      roomType: ''
+      SoPhong: '',
+      TinhTrang: '',
+      LoaiPhong: '',
+      TrangThai: '',
     });
+    setError(null);
+  };
+
+  const handleInputChange = (field, value) => {
+    const updatedValue = value;
+    if (selectedRoom) {
+      setSelectedRoom(prev => ({
+        ...prev,
+        [field]: updatedValue,
+      }));
+    } else {
+      setNewRoom(prev => ({
+        ...prev,
+        [field]: updatedValue,
+      }));
+    }
   };
 
   return (
     <div className="rm-main-container">
-      <Sidebar 
-        isSidebarOpen={isSidebarOpen} 
-        toggleSidebar={toggleSidebar} 
-        onLogoutClick={() => setShowLogoutConfirm(true)} 
+      <Sidebar
+        isSidebarOpen={isSidebarOpen}
+        toggleSidebar={toggleSidebar}
+        onLogoutClick={() => setShowLogoutConfirm(true)}
       />
-       <LogoutModal 
+      <LogoutModal
         isOpen={showLogoutConfirm}
         onConfirm={handleConfirmLogout}
         onCancel={handleCancelLogout}
@@ -125,13 +329,17 @@ const handleCancelLogout = () => {
           <div className="menu-icon" onClick={toggleSidebar}>☰</div>
           <div className="top-title">Quản Lý Phòng</div>
         </div>
-        <div className="more-icon" onClick={() => console.log('Mở tùy chọn bổ sung')}>⋮</div>
+        <div className="more-icon" onClick={() => console.log('Mở tùy chọn bổ sung')}>
+          ⋮
+        </div>
       </div>
 
       <div className="rm-content-wrapper">
         <div className="rm-search-add-section">
           <div className="rm-search-box">
-            <span className="rm-search-icon"><img src="/icon_LTW/TimKiem.png" alt="#"></img></span>
+            <span className="rm-search-icon">
+              <img src="/icon_LTW/TimKiem.png" alt="Search" />
+            </span>
             <input
               type="text"
               placeholder="Tìm theo số phòng"
@@ -144,6 +352,12 @@ const handleCancelLogout = () => {
           </button>
         </div>
 
+        {error && (
+          <div style={{ color: 'red', textAlign: 'center', margin: '10px' }}>
+            {error}
+          </div>
+        )}
+
         <div className="rm-table-container">
           <table className="rm-room-table">
             <thead>
@@ -151,31 +365,42 @@ const handleCancelLogout = () => {
                 <th>Số phòng</th>
                 <th>Tình trạng</th>
                 <th>Loại phòng</th>
+                <th>Trạng thái</th>
                 <th>Sửa</th>
                 <th>Xóa</th>
               </tr>
             </thead>
             <tbody>
-              {filteredRooms.map((room) => (
-                <tr key={room.id}>
-                  <td>{room.roomNumber}</td>
-                  <td>{room.status}</td>
-                  <td>{room.roomType}</td>
-                  <td>
-                    <button className="rm-edit-btn" onClick={() => handleEdit(room.id)}>
-                      <span className="rm-edit-icon"><img src="/icon_LTW/Edit.png" alt="#"></img></span>
-                    </button>
-                  </td>
-                  <td>
-                    <button
-                      className="rm-delete-btn"
-                      onClick={() => handleDelete(room.id)}
-                    >
-                      <span className="rm-delete-icon"><img src="/icon_LTW/Xoa.png" alt="#"></img></span>
-                    </button>
+              {rooms.length === 0 && !error ? (
+                <tr>
+                  <td colSpan="6" style={{ textAlign: 'center' }}>
+                    Không có dữ liệu để hiển thị.
                   </td>
                 </tr>
-              ))}
+              ) : (
+                rooms.map((room) => (
+                  <tr key={room.MaPhong}>
+                    <td>{room.SoPhong}</td>
+                    <td>{room.TinhTrang}</td>
+                    <td>{getRoomTypeName(room.LoaiPhong)}</td>
+                    <td>{room.TrangThai}</td>
+                    <td>
+                      <button className="rm-edit-btn profes" onClick={() => handleEdit(room.MaPhong)}>
+                        <span className="rm-edit-icon">
+                          <img src="/icon_LTW/Edit.png" alt="Edit" />
+                        </span>
+                      </button>
+                    </td>
+                    <td>
+                      <button className="rm-delete-btn" onClick={() => handleDelete(room.MaPhong)}>
+                        <span className="rm-delete-icon">
+                          <img src="/icon_LTW/Xoa.png" alt="Delete" />
+                        </span>
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -184,36 +409,28 @@ const handleCancelLogout = () => {
       {showDetailsModal && (
         <div className="cm-modal-overlay">
           <div className={selectedRoom ? 'rm-edit-modal-wrapper' : 'rm-add-modal-wrapper'}>
-            <h2 className="cm-modal-title">{selectedRoom ? `Sửa phòng ${selectedRoom.roomNumber}` : 'Thêm phòng'}</h2>
+            <h2 className="cm-modal-title">{selectedRoom ? `Sửa phòng ${selectedRoom.SoPhong}` : 'Thêm phòng'}</h2>
             <div className="cm-modal-content">
               <div className="cm-form-container">
                 <div className="cm-form-field">
-                  <span className="cm-field-icon"><img src="/icon_LTW/QLP_SoPhong.png" alt="#"></img></span>
+                  <span className="cm-field-icon">
+                    <img src="/icon_LTW/QLP_SoPhong.png" alt="Room Number" />
+                  </span>
                   <input
                     type="text"
                     placeholder="Số phòng"
-                    value={selectedRoom ? selectedRoom.roomNumber : newRoom.roomNumber}
-                    onChange={(e) => {
-                      if (selectedRoom) {
-                        setSelectedRoom({ ...selectedRoom, roomNumber: e.target.value });
-                      } else {
-                        setNewRoom({ ...newRoom, roomNumber: e.target.value });
-                      }
-                    }}
+                    value={selectedRoom ? selectedRoom.SoPhong : newRoom.SoPhong}
+                    onChange={(e) => handleInputChange('SoPhong', e.target.value)}
                     className="cm-input-field"
                   />
                 </div>
                 <div className="cm-form-field">
-                  <span className="cm-field-icon"><img src="/icon_LTW/QLP_SuaPhong.png" alt="#"></img></span>
+                  <span className="cm-field-icon">
+                    <img src="/icon_LTW/QLP_SuaPhong.png" alt="Status" />
+                  </span>
                   <select
-                    value={selectedRoom ? selectedRoom.status : newRoom.status}
-                    onChange={(e) => {
-                      if (selectedRoom) {
-                        setSelectedRoom({ ...selectedRoom, status: e.target.value });
-                      } else {
-                        setNewRoom({ ...newRoom, status: e.target.value });
-                      }
-                    }}
+                    value={selectedRoom ? selectedRoom.TinhTrang : newRoom.TinhTrang}
+                    onChange={(e) => handleInputChange('TinhTrang', e.target.value)}
                     className="cm-select-field"
                   >
                     <option value="" disabled>Tình trạng</option>
@@ -223,38 +440,57 @@ const handleCancelLogout = () => {
                   </select>
                 </div>
                 <div className="cm-form-field">
-                  <span className="cm-field-icon"><img src="/icon_LTW/QLP_SuaPhong2.png" alt="#"></img></span>
+                  <span className="cm-field-icon">
+                    <img src="/icon_LTW/QLP_SuaPhong2.png" alt="Room Type" />
+                  </span>
                   <select
-                    value={selectedRoom ? selectedRoom.roomType : newRoom.roomType}
-                    onChange={(e) => {
-                      if (selectedRoom) {
-                        setSelectedRoom({ ...selectedRoom, roomType: e.target.value });
-                      } else {
-                        setNewRoom({ ...newRoom, roomType: e.target.value });
-                      }
-                    }}
+                    value={selectedRoom ? selectedRoom.LoaiPhong : newRoom.LoaiPhong}
+                    onChange={(e) => handleInputChange('LoaiPhong', e.target.value)}
                     className="cm-select-field"
                   >
                     <option value="" disabled>Loại phòng</option>
-                    <option value="Phòng đơn">Phòng đơn</option>
-                    <option value="Phòng đôi">Phòng đôi</option>
-                    <option value="Phòng gia đình">Phòng gia đình</option>
+                    {roomTypes.map((type) => (
+                      <option key={type.MaLoaiPhong} value={String(type.MaLoaiPhong)}>
+                        {type.TenLoaiPhong} - {type.GiaPhong.toLocaleString('vi-VN')} VND
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="cm-form-field">
+                  <span className="cm-field-icon">
+                    <img src="/icon_LTW/QLP_SuaPhong.png" alt="State" />
+                  </span>
+                  <select
+                    value={selectedRoom ? selectedRoom.TrangThai : newRoom.TrangThai}
+                    onChange={(e) => handleInputChange('TrangThai', e.target.value)}
+                    className="cm-select-field"
+                  >
+                    <option value="" disabled>Trạng thái</option>
+                    <option value="Trống">Trống</option>
+                    <option value="Đã đặt">Đã đặt</option>
+                    <option value="Đang thuê">Đang thuê</option>
                   </select>
                 </div>
               </div>
             </div>
             <div className="cm-modal-actions">
-              <button className={selectedRoom ? 'rm-save-edit-btn' : 'rm-save-add-btn'} onClick={handleSave}>Lưu</button>
-              <button className="cm-cancel-btn" onClick={handleCancel}>Hủy bỏ</button>
+              <button className={selectedRoom ? 'rm-save-edit-btn' : 'rm-save-add-btn'} onClick={handleSave}>
+                Lưu
+              </button>
+              <button className="cm-cancel-btn" onClick={handleCancel}>
+                Hủy
+              </button>
             </div>
           </div>
         </div>
       )}
-     
+
       {showSaveConfirm && (
         <div className="logout-modal">
           <div className="logout-modal-content">
-            <span className="close-icon" onClick={() => setShowSaveConfirm(false)}><img src="/icon_LTW/FontistoClose.png" alt="#"></img></span>
+            <span className="close-icon" onClick={() => setShowSaveConfirm(false)}>
+              <img src="/icon_LTW/FontistoClose.png" alt="Close" />
+            </span>
             <div className="logout-modal-header">
               <span className="header-text">Thông Báo</span>
             </div>
@@ -264,24 +500,87 @@ const handleCancelLogout = () => {
               <p className="logout-message">Sửa thông tin phòng thành công!</p>
             )}
             <div className="logout-modal-buttons">
-              <button className="confirm-button" onClick={() => {
-                setShowSaveConfirm(false);
-                setShowAddSuccess(false);
-              }}>
+              <button
+                className="confirm-button"
+                onClick={() => {
+                  setShowSaveConfirm(false);
+                  setShowAddSuccess(false);
+                }}
+              >
                 OK
               </button>
             </div>
           </div>
         </div>
       )}
-      {showDeleteConfirm && roomToDelete && (
+
+      {showDuplicateRoom && (
         <div className="logout-modal">
           <div className="logout-modal-content">
-            <span className="close-icon" onClick={() => setShowDeleteConfirm(false)}><img src="/icon_LTW/FontistoClose.png" alt="#"></img></span>
+            <span className="close-icon" onClick={() => setShowDuplicateRoom(false)}>
+              <img src="/icon_LTW/FontistoClose.png" alt="Close" />
+            </span>
             <div className="logout-modal-header">
               <span className="header-text">Thông Báo</span>
             </div>
-            <p className="logout-message">Bạn có thực sự muốn xóa phòng {roomToDelete.roomNumber}?</p>
+            <p className="logout-message">Số phòng đã tồn tại!</p>
+            <div className="logout-modal-buttons">
+              <button className="confirm-button" onClick={() => setShowDuplicateRoom(false)}>
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showConstraintError && (
+        <div className="logout-modal">
+          <div className="logout-modal-content">
+            <span className="close-icon" onClick={() => setShowConstraintError(false)}>
+              <img src="/icon_LTW/FontistoClose.png" alt="Close" />
+            </span>
+            <div className="logout-modal-header">
+              <span className="header-text">Thông Báo</span>
+            </div>
+            <p className="logout-message">Phòng đang được sử dụng, không thể xóa!</p>
+            <div className="logout-modal-buttons">
+              <button className="confirm-button" onClick={() => setShowConstraintError(false)}>
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showEmptyDataError && (
+        <div className="logout-modal">
+          <div className="logout-modal-content">
+            <span className="close-icon" onClick={() => setShowEmptyDataError(false)}>
+              <img src="/icon_LTW/FontistoClose.png" alt="Close" />
+            </span>
+            <div className="logout-modal-header">
+              <span className="header-text">Thông Báo</span>
+            </div>
+            <p className="logout-message">Bạn chưa nhập đầy đủ thông tin, vui lòng nhập đầy đủ thông tin!</p>
+            <div className="logout-modal-buttons">
+              <button className="confirm-button" onClick={() => setShowEmptyDataError(false)}>
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteConfirm && roomToDelete && (
+        <div className="logout-modal">
+          <div className="logout-modal-content">
+            <span className="close-icon" onClick={() => setShowDeleteConfirm(false)}>
+              <img src="/icon_LTW/FontistoClose.png" alt="Close" />
+            </span>
+            <div className="logout-modal-header">
+              <span className="header-text">Thông Báo</span>
+            </div>
+            <p className="logout-message">Bạn có thực sự muốn xóa phòng {roomToDelete.SoPhong}?</p>
             <div className="logout-modal-buttons">
               <button className="confirm-button" onClick={handleConfirmDelete}>
                 YES
@@ -293,10 +592,13 @@ const handleCancelLogout = () => {
           </div>
         </div>
       )}
+
       {showDeleteSuccess && (
         <div className="logout-modal">
           <div className="logout-modal-content">
-            <span className="close-icon" onClick={() => setShowDeleteSuccess(false)}><img src="/icon_LTW/FontistoClose.png" alt="#"></img></span>
+            <span className="close-icon" onClick={() => setShowDeleteSuccess(false)}>
+              <img src="/icon_LTW/FontistoClose.png" alt="Close" />
+            </span>
             <div className="logout-modal-header">
               <span className="header-text">Thông Báo</span>
             </div>

@@ -12,7 +12,7 @@ const RoomTypeManagement = () => {
     typeName: '',
     bedCount: '',
     dayPrice: '',
-    description: '' // Xóa hourPrice
+    description: ''
   });
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -22,6 +22,9 @@ const RoomTypeManagement = () => {
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
   const [roomTypes, setRoomTypes] = useState([]);
   const [errorMessage, setErrorMessage] = useState('');
+  const [showInputErrorModal, setShowInputErrorModal] = useState(false);
+  const [showApiErrorModal, setShowApiErrorModal] = useState(false);
+  const [apiErrorMessage, setApiErrorMessage] = useState('');
 
   const API_BASE_URL = 'http://localhost:5282';
 
@@ -53,7 +56,7 @@ const RoomTypeManagement = () => {
           typeName: type.tenLoaiPhong || 'N/A',
           bedCount: type.moTa?.match(/(\d+)\s*giường/)?.[1] || 1,
           dayPrice: type.giaPhong !== undefined ? `${parseFloat(type.giaPhong).toLocaleString('vi-VN')} VND` : '0 VND',
-          hourPrice: type.giaGio !== undefined ? `${parseFloat(type.giaGio).toLocaleString('vi-VN')} VND` : '0 VND', // Lấy từ API
+          hourPrice: type.giaGio !== undefined ? `${parseFloat(type.giaGio).toLocaleString('vi-VN')} VND` : '0 VND',
           description: type.moTa || ''
         }));
         setRoomTypes(validatedData);
@@ -91,7 +94,7 @@ const RoomTypeManagement = () => {
       typeName: type.typeName,
       bedCount: type.bedCount,
       dayPrice: type.dayPrice.replace(' VND', '').replace(/\./g, ''),
-      description: type.description // Xóa hourPrice
+      description: type.description
     });
     setShowEditModal(true);
   };
@@ -114,7 +117,8 @@ const RoomTypeManagement = () => {
   const handleConfirmDelete = async () => {
     try {
       if (!typeToDelete) {
-        setErrorMessage('Không có loại phòng nào được chọn để xóa!');
+        setApiErrorMessage('Không có loại phòng nào được chọn để xóa!');
+        setShowApiErrorModal(true);
         setShowDeleteConfirm(false);
         return;
       }
@@ -124,10 +128,11 @@ const RoomTypeManagement = () => {
       });
       if (!response.ok) {
         const errorText = await response.text();
-        const errorMessage = errorText.includes('khong ton tai') 
-          ? 'Mã loại phòng không tồn tại!'
-          : `Lỗi HTTP: ${response.status} - ${response.statusText}. Chi tiết: ${errorText.substring(0, 200)}`;
-        throw new Error(errorMessage);
+        const errorData = JSON.parse(errorText);
+        setApiErrorMessage(errorData.message || `Lỗi HTTP: ${response.status} - ${response.statusText}. Chi tiết: ${errorText.substring(0, 200)}`);
+        setShowApiErrorModal(true);
+        setShowDeleteConfirm(false);
+        return;
       }
       const result = await response.json();
       if (result.success) {
@@ -135,11 +140,14 @@ const RoomTypeManagement = () => {
         setShowDeleteSuccess(true);
         fetchRoomTypes();
       } else {
-        throw new Error(result.message || 'Xóa loại phòng thất bại');
+        setApiErrorMessage(result.message || 'Xóa loại phòng thất bại');
+        setShowApiErrorModal(true);
+        setShowDeleteConfirm(false);
       }
     } catch (error) {
       console.error('Lỗi khi gọi API xóa:', error);
-      setErrorMessage(error.message);
+      setApiErrorMessage(error.message || 'Đã xảy ra lỗi khi xóa loại phòng');
+      setShowApiErrorModal(true);
       setShowDeleteConfirm(false);
     }
   };
@@ -149,7 +157,7 @@ const RoomTypeManagement = () => {
       typeName: '',
       bedCount: '',
       dayPrice: '',
-      description: '' // Xóa hourPrice
+      description: ''
     });
     setSelectedType(null);
     setShowEditModal(true);
@@ -164,14 +172,11 @@ const RoomTypeManagement = () => {
 
   const handleSave = async () => {
     try {
-      if (!selectedType) {
-        const isDuplicate = roomTypes.some(
-          (type) => type.typeName.toLowerCase() === newType.typeName.toLowerCase()
-        );
-        if (isDuplicate) {
-          setErrorMessage('Tên loại phòng đã tồn tại. Vui lòng chọn tên khác.');
-          return;
-        }
+      // Kiểm tra dữ liệu đầu vào
+      const currentType = selectedType || newType;
+      if (!currentType.typeName || !currentType.bedCount || !currentType.dayPrice) {
+        setShowInputErrorModal(true); // Hiển thị bảng thông báo lỗi nhập liệu
+        return;
       }
 
       if (selectedType) {
@@ -189,7 +194,10 @@ const RoomTypeManagement = () => {
         });
         if (!response.ok) {
           const errorText = await response.text();
-          throw new Error(`Lỗi HTTP: ${response.status} - ${response.statusText}. Chi tiết: ${errorText}`);
+          const errorData = JSON.parse(errorText);
+          setApiErrorMessage(errorData.message || `Lỗi HTTP: ${response.status} - ${response.statusText}. Chi tiết: ${errorText.substring(0, 200)}`);
+          setShowApiErrorModal(true);
+          return;
         }
         const result = await response.json();
         console.log('PUT Response:', result);
@@ -198,7 +206,8 @@ const RoomTypeManagement = () => {
           setShowSaveConfirm(true);
           fetchRoomTypes();
         } else {
-          throw new Error(result.message || 'Cập nhật loại phòng thất bại');
+          setApiErrorMessage(result.message || 'Cập nhật loại phòng thất bại');
+          setShowApiErrorModal(true);
         }
       } else {
         const roomTypeData = {
@@ -214,7 +223,10 @@ const RoomTypeManagement = () => {
         });
         if (!response.ok) {
           const errorText = await response.text();
-          throw new Error(`Lỗi HTTP: ${response.status} - ${response.statusText}. Chi tiết: ${errorText}`);
+          const errorData = JSON.parse(errorText);
+          setApiErrorMessage(errorData.message || `Lỗi HTTP: ${response.status} - ${response.statusText}. Chi tiết: ${errorText.substring(0, 200)}`);
+          setShowApiErrorModal(true);
+          return;
         }
         const result = await response.json();
         console.log('POST Response:', result);
@@ -224,12 +236,14 @@ const RoomTypeManagement = () => {
           setShowAddSuccess(true);
           fetchRoomTypes();
         } else {
-          throw new Error(result.message || 'Thêm loại phòng thất bại');
+          setApiErrorMessage(result.message || 'Thêm loại phòng thất bại');
+          setShowApiErrorModal(true);
         }
       }
     } catch (error) {
       console.error('Lỗi khi gọi API:', error);
-      setErrorMessage(error.message || 'Đã xảy ra lỗi khi lưu loại phòng');
+      setApiErrorMessage(error.message || 'Đã xảy ra lỗi khi lưu loại phòng');
+      setShowApiErrorModal(true);
     }
   };
 
@@ -240,7 +254,7 @@ const RoomTypeManagement = () => {
       typeName: '',
       bedCount: '',
       dayPrice: '',
-      description: '' // Xóa hourPrice
+      description: ''
     });
     setErrorMessage('');
   };
@@ -252,7 +266,7 @@ const RoomTypeManagement = () => {
         toggleSidebar={toggleSidebar}
         onLogoutClick={() => setShowLogoutConfirm(true)}
       />
-      <LogoutModal 
+      <LogoutModal
         isOpen={showLogoutConfirm}
         onConfirm={handleConfirmLogout}
         onCancel={handleCancelLogout}
@@ -464,6 +478,44 @@ const RoomTypeManagement = () => {
             <p className="logout-message">Xóa loại phòng thành công!</p>
             <div className="logout-modal-buttons">
               <button className="confirm-button" onClick={() => setShowDeleteSuccess(false)}>
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showInputErrorModal && (
+        <div className="logout-modal">
+          <div className="logout-modal-content">
+            <span className="close-icon" onClick={() => setShowInputErrorModal(false)}>
+              <img src="/icon_LTW/FontistoClose.png" alt="#" />
+            </span>
+            <div className="logout-modal-header">
+              <span className="header-text">Thông Báo</span>
+            </div>
+            <p className="logout-message">Bạn chưa nhập đầy đủ thông tin. Vui lòng nhập đầy đủ thông tin!</p>
+            <div className="logout-modal-buttons">
+              <button className="confirm-button" onClick={() => setShowInputErrorModal(false)}>
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showApiErrorModal && (
+        <div className="logout-modal">
+          <div className="logout-modal-content">
+            <span className="close-icon" onClick={() => setShowApiErrorModal(false)}>
+              <img src="/icon_LTW/FontistoClose.png" alt="#" />
+            </span>
+            <div className="logout-modal-header">
+              <span className="header-text">Thông Báo</span>
+            </div>
+            <p className="logout-message">{apiErrorMessage}</p>
+            <div className="logout-modal-buttons">
+              <button className="confirm-button" onClick={() => setShowApiErrorModal(false)}>
                 OK
               </button>
             </div>

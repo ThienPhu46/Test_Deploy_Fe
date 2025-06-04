@@ -513,7 +513,7 @@ const PointProgramManagement = () => {
             <div className="logout-modal-header">
               <span className="header-text">Thông Báo</span>
             </div>
-            <p className="logout-message">Vui lòng nhập đầy đủ thông tin.</p>
+            <p className="logout-message">Bạn chưa nhập đầy đủ thông tin. Vui lòng nhập đầy đủ thông tin!</p>
             <div className="logout-modal-buttons">
               <button className="confirm-button" onClick={() => setShowInputError(false)}>
                 OK

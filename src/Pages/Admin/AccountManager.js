@@ -24,7 +24,8 @@ const AccountManagement = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
   const [showDeleteError, setShowDeleteError] = useState(false);
-  const [showInputError, setShowInputError] = useState(false); // Thêm state cho modal lỗi nhập liệu
+  const [showInputError, setShowInputError] = useState(false);
+  const [showDuplicateError, setShowDuplicateError] = useState(false); // New state for duplicate error modal
   const [accountToDelete, setAccountToDelete] = useState(null);
   const [accounts, setAccounts] = useState([]);
   const [pageNumber, setPageNumber] = useState(1);
@@ -84,6 +85,7 @@ const AccountManagement = () => {
       if (emailResponse.data.success && emailResponse.data.data) {
         errors.push('Email đã tồn tại');
       }
+      
 
       if (errors.length > 0) {
         return { isDuplicate: true, message: errors.join(' và ') };
@@ -122,7 +124,6 @@ const AccountManagement = () => {
     setShowPassword(!showPassword);
   };
 
-  // Kiểm tra dữ liệu đầu vào
   const validateAccountData = (accountData) => {
     if (!accountData.tenTaiKhoan.trim()) return 'Vui lòng nhập tên tài khoản.';
     if (!accountData.matKhau.trim()) return 'Vui lòng nhập mật khẩu.';
@@ -136,13 +137,14 @@ const AccountManagement = () => {
   const handleAddAccount = async () => {
     const validationError = validateAccountData(newAccount);
     if (validationError) {
-      setShowInputError(true); // Hiển thị modal lỗi nhập liệu
+      setShowInputError(true);
       return;
     }
 
     const { isDuplicate, message } = await checkDuplicateAccount(newAccount.tenTaiKhoan, newAccount.email);
     if (isDuplicate) {
       setErrorMessage(message);
+      setShowDuplicateError(true); // Show duplicate error modal
       return;
     }
 
@@ -173,7 +175,7 @@ const AccountManagement = () => {
   const handleUpdateAccount = async () => {
     const validationError = validateAccountData(selectedAccount);
     if (validationError) {
-      setShowInputError(true); // Hiển thị modal lỗi nhập liệu
+      setShowInputError(true);
       return;
     }
 
@@ -234,11 +236,6 @@ const AccountManagement = () => {
       </div>
 
       <div className="am-content-wrapper">
-        {errorMessage && (
-          <div style={{ color: 'black', margin: '10px 0' }}>
-            {errorMessage}
-          </div>
-        )}
         <div className="am-search-add-section">
           <div className="am-search-box">
             <span className="am-search-icon"><img src="/icon_LTW/TimKiem.png" alt="#" /></span>
@@ -565,9 +562,29 @@ const AccountManagement = () => {
             <div className="logout-modal-header">
               <span className="header-text">Thông Báo</span>
             </div>
-            <p className="logout-message">Vui lòng nhập đầy đủ thông tin.</p>
+            <p className="logout-message">Bạn chưa nhập đầy đủ thông tin. Vui lòng nhập đầy đủ thông tin!</p>
             <div className="logout-modal-buttons">
               <button className="confirm-button" onClick={() => setShowInputError(false)}>
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDuplicateError && (
+        <div className="logout-modal">
+          <div className="logout-modal-content">
+            <span className="close-icon" onClick={() => setShowDuplicateError(false)}><img src="/icon_LTW/FontistoClose.png" alt="#" /></span>
+            <div className="logout-modal-header">
+              <span className="header-text">Thông Báo</span>
+            </div>
+            <p className="logout-message">{errorMessage}</p>
+            <div className="logout-modal-buttons">
+              <button className="confirm-button" onClick={() => {
+                setShowDuplicateError(false);
+                setErrorMessage('');
+              }}>
                 OK
               </button>
             </div>

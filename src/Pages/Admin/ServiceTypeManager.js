@@ -1,76 +1,55 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import '../../Design_Css/Admin/LoyaltyPointsManager.css';
+import '../../Design_Css/Admin/ServiceTypeManager.css';
 import Sidebar from '../../Components/Admin/Components_Js/Sliderbar';
 import LogoutModal from '../../Components/Admin/Components_Js/LogoutModal';
 
-const PointProgramManagement = () => {
+const ServiceTypeManagement = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [selectedProgram, setSelectedProgram] = useState(null);
-  const [newProgram, setNewProgram] = useState({
-    tenCT: '',
-    diemToiThieu: '',
-    mucGiamGia: '',
-    tyLeTichDiem: ''
+  const [selectedServiceType, setSelectedServiceType] = useState(null);
+  const [newServiceType, setNewServiceType] = useState({
+    serviceTypeCode: '',
+    serviceTypeName: ''
   });
-  const [pointPrograms, setPointPrograms] = useState([]);
+  const [serviceTypes, setServiceTypes] = useState([]);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showAddSuccess, setShowAddSuccess] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
   const [showDeleteError, setShowDeleteError] = useState(false);
-  const [showInputError, setShowInputError] = useState(false); // Thêm state cho modal lỗi nhập liệu
-  const [programToDelete, setProgramToDelete] = useState(null);
+  const [showInputError, setShowInputError] = useState(false);
+  const [showDuplicateError, setShowDuplicateError] = useState(false); // New state for duplicate error modal
+  const [serviceTypeToDelete, setServiceTypeToDelete] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
 
   const API_BASE_URL = 'http://localhost:5282';
 
-  const fetchPointPrograms = useCallback(async () => {
+  const fetchServiceTypes = useCallback(async () => {
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/point-programs?searchTerm=${searchTerm}&sortBy=MaCT&sortOrder=ASC`
-      );
-      const contentType = response.headers.get('content-type');
+      const response = await fetch(`${API_BASE_URL}/api/service-types?pageNumber=1&pageSize=100`);
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Lỗi HTTP: ${response.status} - ${response.statusText}. Chi tiết: ${errorText.substring(0, 200)}`);
-      }
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        throw new Error('Phản hồi từ server không phải là JSON hợp lệ: ' + text.substring(0, 200));
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Lỗi HTTP: ${response.status} - ${response.statusText}`);
       }
       const result = await response.json();
-      console.log('API Response:', result);
       if (result.success) {
-        const programData = result.data || [];
-        console.log('Point Program Data:', programData);
-        if (!Array.isArray(programData)) {
-          throw new Error('Dữ liệu chương trình điểm không phải là mảng');
-        }
-        const validatedData = programData.map((program, index) => ({
-          maCT: program.maCT || `TEMP_${index}`,
-          tenCT: program.tenCT || 'N/A',
-          diemToiThieu: program.diemToiThieu !== undefined ? program.diemToiThieu : 0,
-          mucGiamGia: program.mucGiamGia !== undefined ? (program.mucGiamGia * 100).toFixed(2) + '%' : '0%',
-          tyLeTichDiem: program.tyLeTichDiem !== undefined ? (program.tyLeTichDiem * 100).toFixed(2) + '%' : '0%'
-        }));
-        setPointPrograms(validatedData);
+        setServiceTypes(result.data || []);
         setErrorMessage('');
       } else {
-        throw new Error(result.message || 'Không thể tải danh sách chương trình điểm');
+        throw new Error(result.message || 'Không thể tải danh sách loại dịch vụ');
       }
     } catch (error) {
       console.error('Lỗi khi gọi API:', error);
       setErrorMessage(error.message);
-      setPointPrograms([]);
+      setServiceTypes([]);
     }
-  }, [searchTerm]);
+  }, []);
 
   useEffect(() => {
-    fetchPointPrograms();
-  }, [fetchPointPrograms]);
+    fetchServiceTypes();
+  }, [fetchServiceTypes]);
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -80,37 +59,105 @@ const PointProgramManagement = () => {
     setSearchTerm(e.target.value);
   };
 
-  const handleEdit = (program) => {
-    setSelectedProgram({
-      maCT: program.maCT,
-      tenCT: program.tenCT,
-      diemToiThieu: program.diemToiThieu,
-      mucGiamGia: program.mucGiamGia.replace('%', ''),
-      tyLeTichDiem: program.tyLeTichDiem.replace('%', '')
+  const filteredServiceTypes = serviceTypes.filter((serviceType) =>
+    serviceType.tenLoaiDV.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleConfirmLogout = () => {
+    console.log('Người dùng đã đăng xuất');
+    setShowLogoutConfirm(false);
+    window.location.href = '/';
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutConfirm(false);
+  };
+
+  const handleAddServiceType = () => {
+    setNewServiceType({
+      serviceTypeCode: '',
+      serviceTypeName: ''
     });
+    setSelectedServiceType(null);
     setShowDetailsModal(true);
   };
 
-  const handleDelete = (program) => {
-    setProgramToDelete(program);
-    setShowDeleteConfirm(true);
+  const validateServiceTypeData = (serviceTypeData) => {
+    if (!serviceTypeData.serviceTypeName.trim()) return 'Vui lòng nhập tên loại dịch vụ.';
+    if (!selectedServiceType) {
+      const isDuplicate = serviceTypes.some(
+        (type) => type.tenLoaiDV.toLowerCase() === serviceTypeData.serviceTypeName.trim().toLowerCase()
+      );
+      if (isDuplicate) return 'Loại dịch vụ với tên này đã tồn tại.';
+    }
+    return null;
+  };
+
+  const handleSave = async () => {
+    const serviceTypeData = selectedServiceType || newServiceType;
+    const validationError = validateServiceTypeData(serviceTypeData);
+    if (validationError) {
+      if (validationError === 'Loại dịch vụ với tên này đã tồn tại.') {
+        setShowDuplicateError(true); // Show duplicate error modal
+      } else {
+        setShowInputError(true); // Hiển thị modal lỗi nhập liệu
+      }
+      return;
+    }
+
+    try {
+      const url = selectedServiceType
+        ? `${API_BASE_URL}/api/service-types/${selectedServiceType.maLoaiDV}`
+        : `${API_BASE_URL}/api/service-types`;
+      const method = selectedServiceType ? 'PUT' : 'POST';
+
+      const body = {
+        tenLoaiDV: serviceTypeData.serviceTypeName
+      };
+
+      const response = await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Lỗi HTTP: ${response.status} - ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      if (result.success) {
+        setShowDetailsModal(false);
+        setShowSaveConfirm(true);
+        setShowAddSuccess(!selectedServiceType);
+        fetchServiceTypes();
+      } else {
+        throw new Error(result.message || (selectedServiceType ? 'Cập nhật loại dịch vụ thất bại' : 'Thêm loại dịch vụ thất bại'));
+      }
+    } catch (error) {
+      console.error('Lỗi khi gọi API:', error);
+      setErrorMessage(error.message || 'Đã xảy ra lỗi khi lưu loại dịch vụ');
+    }
   };
 
   const handleConfirmDelete = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/point-programs/${programToDelete.maCT}`, {
+      const response = await fetch(`${API_BASE_URL}/api/service-types/${serviceTypeToDelete.maLoaiDV}`, {
         method: 'DELETE',
       });
+
       if (!response.ok) {
         setShowDeleteConfirm(false);
         setShowDeleteError(true);
-        throw new Error(`Lỗi HTTP: ${response.status} - ${response.statusText}`);
+        throw new Error('Lỗi khi xóa loại dịch vụ');
       }
+
       const result = await response.json();
       if (result.success) {
         setShowDeleteConfirm(false);
         setShowDeleteSuccess(true);
-        fetchPointPrograms();
+        fetchServiceTypes();
       } else {
         setShowDeleteConfirm(false);
         setShowDeleteError(true);
@@ -122,115 +169,8 @@ const PointProgramManagement = () => {
     }
   };
 
-  // Kiểm tra dữ liệu đầu vào
-  const validateProgramData = (programData) => {
-    if (!programData.tenCT.trim()) return 'Vui lòng nhập tên chương trình.';
-    if (!programData.diemToiThieu) return 'Vui lòng nhập điểm tối thiểu.';
-    if (!programData.mucGiamGia) return 'Vui lòng nhập mức giảm giá.';
-    if (!programData.tyLeTichDiem) return 'Vui lòng nhập tỷ lệ tích điểm.';
-    return null;
-  };
-
-  const handleSave = async () => {
-    const programData = selectedProgram || newProgram;
-    const validationError = validateProgramData(programData);
-    if (validationError) {
-      setShowInputError(true); // Hiển thị modal lỗi nhập liệu
-      return;
-    }
-
-    try {
-      if (!selectedProgram) {
-        const isDuplicate = pointPrograms.some(
-          (program) => program.tenCT.toLowerCase() === newProgram.tenCT.toLowerCase()
-        );
-        if (isDuplicate) {
-          setErrorMessage('Tên chương trình đã tồn tại. Vui lòng chọn tên khác.');
-          return;
-        }
-      }
-
-      if (selectedProgram) {
-        const response = await fetch(`${API_BASE_URL}/api/point-programs/${selectedProgram.maCT}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            maCT: selectedProgram.maCT,
-            tenCT: selectedProgram.tenCT,
-            diemToiThieu: parseInt(selectedProgram.diemToiThieu),
-            mucGiamGia: parseFloat(selectedProgram.mucGiamGia) / 100,
-            tyLeTichDiem: parseFloat(selectedProgram.tyLeTichDiem) / 100
-          }),
-        });
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Lỗi HTTP: ${response.status} - ${response.statusText}. Chi tiết: ${errorText}`);
-        }
-        const result = await response.json();
-        console.log('PUT Response:', result);
-        if (result.success) {
-          setShowDetailsModal(false);
-          setShowSaveConfirm(true);
-          fetchPointPrograms();
-        } else {
-          throw new Error(result.message || 'Cập nhật chương trình điểm thất bại');
-        }
-      } else {
-        const response = await fetch(`${API_BASE_URL}/api/point-programs`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            tenCT: newProgram.tenCT,
-            diemToiThieu: parseInt(newProgram.diemToiThieu),
-            mucGiamGia: parseFloat(newProgram.mucGiamGia) / 100,
-            tyLeTichDiem: parseFloat(newProgram.tyLeTichDiem) / 100
-          }),
-        });
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Lỗi HTTP: ${response.status} - ${response.statusText}. Chi tiết: ${errorText}`);
-        }
-        const result = await response.json();
-        console.log('POST Response:', result);
-        if (result.success) {
-          setShowDetailsModal(false);
-          setShowSaveConfirm(true);
-          setShowAddSuccess(true);
-          fetchPointPrograms();
-        } else {
-          throw new Error(result.message || 'Thêm chương trình điểm thất bại');
-        }
-      }
-    } catch (error) {
-      console.error('Lỗi khi gọi API:', error);
-      setErrorMessage(error.message || 'Đã xảy ra lỗi khi lưu chương trình điểm');
-    }
-  };
-
-  const handleCancel = () => {
-    setShowDetailsModal(false);
-    setSelectedProgram(null);
-    setNewProgram({
-      tenCT: '',
-      diemToiThieu: '',
-      mucGiamGia: '',
-      tyLeTichDiem: ''
-    });
-    setErrorMessage('');
-  };
-
-  const handleCancelLogout = () => {
-    setShowLogoutConfirm(false);
-  };
-
-  const handleConfirmLogout = () => {
-    console.log('Người dùng đã đăng xuất');
-    setShowLogoutConfirm(false);
-    window.location.href = '/';
-  };
-
   return (
-    <div className="pp-main-container">
+    <div className="svtype-main-container">
       <Sidebar
         isSidebarOpen={isSidebarOpen}
         toggleSidebar={toggleSidebar}
@@ -244,80 +184,72 @@ const PointProgramManagement = () => {
       <div className="top-header">
         <div className="top-title-container">
           <div className="menu-icon" onClick={toggleSidebar}>☰</div>
-          <div className="top-title">Quản Lý Chương Trình Tích Điểm</div>
+          <div className="top-title">Quản Lý Loại Dịch Vụ</div>
         </div>
         <div className="more-icon" onClick={() => console.log('Mở tùy chọn bổ sung')}>⋮</div>
       </div>
 
-      <div className="pp-content-wrapper">
-        {errorMessage && (
-          <div className="pp-error-message">
-            {errorMessage}
-          </div>
-        )}
-        <div className="pp-search-add-section">
-          <div className="pp-search-box">
-            <span className="pp-search-icon"><img src="/icon_LTW/TimKiem.png" alt="#" /></span>
+      <div className="svtype-content-wrapper">
+        {errorMessage && <div className="sm-error-message">{errorMessage}</div>}
+        <div className="svtype-search-add-section">
+          <div className="svtype-search-box">
+            <span className="svtype-search-icon"><img src="/icon_LTW/TimKiem.png" alt="#"></img></span>
             <input
               type="text"
-              placeholder="Tìm theo tên chương trình"
+              placeholder="Tìm theo tên loại dịch vụ"
               value={searchTerm}
               onChange={handleSearch}
             />
           </div>
-          <div className="pp-add-action">
-            <button
-              className="pp-add-program-btn"
-              onClick={() => {
-                setNewProgram({
-                  tenCT: '',
-                  diemToiThieu: '',
-                  mucGiamGia: '',
-                  tyLeTichDiem: ''
-                });
-                setSelectedProgram(null);
-                setShowDetailsModal(true);
-                setErrorMessage('');
-              }}
-            >
-              Thêm chương trình
+          <div className="svtype-add-action">
+            <button className="svtype-add-service-type-btn" onClick={handleAddServiceType}>
+              Thêm loại dịch vụ
             </button>
           </div>
         </div>
 
-        <div className="pp-table-container">
-          <table className="pp-program-table">
+        <div className="svtype-table-container">
+          <table className="svtype-service-type-table">
             <thead>
               <tr>
-                <th>Mã chương trình</th>
-                <th>Tên chương trình</th>
-                <th>Điểm tối thiểu</th>
-                <th>Mức giảm giá</th>
-                <th>Tỷ lệ tích điểm</th>
+                <th>Mã loại dịch vụ</th>
+                <th>Tên loại dịch vụ</th>
                 <th>Sửa</th>
                 <th>Xóa</th>
               </tr>
             </thead>
             <tbody>
-              {pointPrograms.length > 0 ? (
-                pointPrograms.map((program) => (
-                  <tr key={program.maCT}>
-                    <td>{program.maCT}</td>
-                    <td>{program.tenCT}</td>
-                    <td>{program.diemToiThieu}</td>
-                    <td>{program.mucGiamGia}</td>
-                    <td>{program.tyLeTichDiem}</td>
+              {filteredServiceTypes.length > 0 ? (
+                filteredServiceTypes.map((serviceType) => (
+                  <tr key={serviceType.maLoaiDV}>
+                    <td>{serviceType.maLoaiDV}</td>
+                    <td>{serviceType.tenLoaiDV}</td>
                     <td>
-                      <div className="pp-edit-action">
-                        <button className="pp-edit-btn" onClick={() => handleEdit(program)}>
-                          <span className="pp-edit-icon"><img src="/icon_LTW/Edit.png" alt="#" /></span>
+                      <div className="svtype-edit-action">
+                        <button
+                          className="svtype-edit-btn"
+                          onClick={() => {
+                            setSelectedServiceType({
+                              maLoaiDV: serviceType.maLoaiDV,
+                              serviceTypeName: serviceType.tenLoaiDV
+                            });
+                            setShowDetailsModal(true);
+                          }}
+                        >
+                          <span className="svtype-edit-icon"><img src="/icon_LTW/Edit.png" alt="#"></img></span>
                         </button>
                       </div>
                     </td>
                     <td>
-                      <div className="pp-delete-action">
-                        <button className="pp-delete-btn" onClick={() => handleDelete(program)}>
-                          <span className="pp-delete-icon"><img src="/icon_LTW/Xoa.png" alt="#" /></span>
+                      <div className="svtype-delete-action">
+                        <button
+                          className="svtype-delete-btn"
+                          onClick={() => {
+                            setServiceTypeToDelete(serviceType);
+                            setShowDeleteConfirm(true);
+                          }}
+                        >
+                          <span className="svtype-delete-icon"><img src="/icon_LTW/Xoa.png" alt="#"></img></span>
                         </button>
                       </div>
                     </td>
@@ -325,7 +257,7 @@ const PointProgramManagement = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="7">Không có dữ liệu để hiển thị</td>
+                  <td colSpan="4">Không có dữ liệu để hiển thị</td>
                 </tr>
               )}
             </tbody>
@@ -334,82 +266,45 @@ const PointProgramManagement = () => {
       </div>
 
       {showDetailsModal && (
-        <div className="pp-modal-overlay">
-          <div className="pp-modal-wrapper">
-            <h2 className="pp-modal-title">
-              {selectedProgram ? `Sửa chương trình ${selectedProgram.maCT}` : 'Thêm chương trình'}
-            </h2>
-            <div className="pp-modal-content">
-              <div className="pp-form-container">
-                <div className="pp-form-field">
-                  <span className="pp-field-icon"><img src="/icon_LTW/RiDiscountPercentFill.png" alt="#" /></span>
+        <div className="svtype-modal-overlay">
+          <div className="svtype-modal-wrapper">
+            <h2 className="svtype-modal-title">{selectedServiceType ? `Sửa loại dịch vụ ${selectedServiceType.maLoaiDV}` : 'Thêm loại dịch vụ'}</h2>
+            <div className="svtype-modal-content">
+              <div className="svtype-form-container">
+                <div className="svtype-form-field">
+                  <span className="svtype-field-icon"><img src="/icon_LTW/SB_QLLoaiDichVu.png" alt="#"></img></span>
                   <input
                     type="text"
-                    placeholder="Tên chương trình"
-                    value={selectedProgram ? selectedProgram.tenCT : newProgram.tenCT}
+                    placeholder="Tên loại dịch vụ"
+                    value={selectedServiceType ? selectedServiceType.serviceTypeName : newServiceType.serviceTypeName}
                     onChange={(e) => {
-                      if (selectedProgram) {
-                        setSelectedProgram({ ...selectedProgram, tenCT: e.target.value });
+                      if (selectedServiceType) {
+                        setSelectedServiceType({ ...selectedServiceType, serviceTypeName: e.target.value });
                       } else {
-                        setNewProgram({ ...newProgram, tenCT: e.target.value });
+                        setNewServiceType({ ...newServiceType, serviceTypeName: e.target.value });
                       }
                     }}
-                    className="pp-input-field"
-                  />
-                </div>
-                <div className="pp-form-field">
-                  <span className="pp-field-icon"><img src="/icon_LTW/QLTĐ_Them2.png" alt="#" /></span>
-                  <input
-                    type="number"
-                    placeholder="Điểm tối thiểu"
-                    value={selectedProgram ? selectedProgram.diemToiThieu : newProgram.diemToiThieu}
-                    onChange={(e) => {
-                      if (selectedProgram) {
-                        setSelectedProgram({ ...selectedProgram, diemToiThieu: e.target.value });
-                      } else {
-                        setNewProgram({ ...newProgram, diemToiThieu: e.target.value });
-                      }
-                    }}
-                    className="pp-input-field"
-                  />
-                </div>
-                <div className="pp-form-field">
-                  <span className="pp-field-icon"><img src="/icon_LTW/QLTĐ_Them3.png" alt="#" /></span>
-                  <input
-                    type="number"
-                    placeholder="Mức giảm giá (%, ví dụ: 5)"
-                    value={selectedProgram ? selectedProgram.mucGiamGia : newProgram.mucGiamGia}
-                    onChange={(e) => {
-                      if (selectedProgram) {
-                        setSelectedProgram({ ...selectedProgram, mucGiamGia: e.target.value });
-                      } else {
-                        setNewProgram({ ...newProgram, mucGiamGia: e.target.value });
-                      }
-                    }}
-                    className="pp-input-field"
-                  />
-                </div>
-                <div className="pp-form-field">
-                  <span className="pp-field-icon"><img src="/icon_LTW/QLTĐ_Them3.png" alt="#" /></span>
-                  <input
-                    type="number"
-                    placeholder="Tỷ lệ tích điểm (%, ví dụ: 1)"
-                    value={selectedProgram ? selectedProgram.tyLeTichDiem : newProgram.tyLeTichDiem}
-                    onChange={(e) => {
-                      if (selectedProgram) {
-                        setSelectedProgram({ ...selectedProgram, tyLeTichDiem: e.target.value });
-                      } else {
-                        setNewProgram({ ...newProgram, tyLeTichDiem: e.target.value });
-                      }
-                    }}
-                    className="pp-input-field"
+                    className="svtype-input-field"
                   />
                 </div>
               </div>
             </div>
-            <div className="pp-modal-actions">
-              <button className="pp-save-btn" onClick={handleSave}>Lưu</button>
-              <button className="pp-cancel-btn" onClick={handleCancel}>Hủy bỏ</button>
+            <div className="svtype-modal-actions">
+              <button className="svtype-save-btn" onClick={handleSave}>Lưu</button>
+              <button
+                className="svtype-cancel-btn"
+                onClick={() => {
+                  setShowDetailsModal(false);
+                  setSelectedServiceType(null);
+                  setNewServiceType({
+                    serviceTypeCode: '',
+                    serviceTypeName: ''
+                  });
+                  setErrorMessage('');
+                }}
+              >
+                Hủy bỏ
+              </button>
             </div>
           </div>
         </div>
@@ -418,16 +313,14 @@ const PointProgramManagement = () => {
       {showSaveConfirm && (
         <div className="logout-modal">
           <div className="logout-modal-content">
-            <span className="close-icon" onClick={() => setShowSaveConfirm(false)}>
-              <img src="/icon_LTW/FontistoClose.png" alt="#" />
-            </span>
+            <span className="close-icon" onClick={() => setShowSaveConfirm(false)}><img src="/icon_LTW/FontistoClose.png" alt="#"></img></span>
             <div className="logout-modal-header">
               <span className="header-text">Thông Báo</span>
             </div>
             {showAddSuccess ? (
-              <p className="logout-message">Thêm chương trình thành công!</p>
+              <p className="logout-message">Thêm loại dịch vụ thành công!</p>
             ) : (
-              <p className="logout-message">Sửa thông tin chương trình thành công!</p>
+              <p className="logout-message">Sửa thông tin loại dịch vụ thành công!</p>
             )}
             <div className="logout-modal-buttons">
               <button
@@ -444,16 +337,14 @@ const PointProgramManagement = () => {
         </div>
       )}
 
-      {showDeleteConfirm && programToDelete && (
+      {showDeleteConfirm && serviceTypeToDelete && (
         <div className="logout-modal">
           <div className="logout-modal-content">
-            <span className="close-icon" onClick={() => setShowDeleteConfirm(false)}>
-              <img src="/icon_LTW/FontistoClose.png" alt="#" />
-            </span>
+            <span className="close-icon" onClick={() => setShowDeleteConfirm(false)}><img src="/icon_LTW/FontistoClose.png" alt="#"></img></span>
             <div className="logout-modal-header">
               <span className="header-text">Thông Báo</span>
             </div>
-            <p className="logout-message">Bạn có thực sự muốn xóa {programToDelete.tenCT}?</p>
+            <p className="logout-message">Bạn có thực sự muốn xóa {serviceTypeToDelete.tenLoaiDV}?</p>
             <div className="logout-modal-buttons">
               <button className="confirm-button" onClick={handleConfirmDelete}>
                 YES
@@ -469,9 +360,7 @@ const PointProgramManagement = () => {
       {showDeleteSuccess && (
         <div className="logout-modal">
           <div className="logout-modal-content">
-            <span className="close-icon" onClick={() => setShowDeleteSuccess(false)}>
-              <img src="/icon_LTW/FontistoClose.png" alt="#" />
-            </span>
+            <span className="close-icon" onClick={() => setShowDeleteSuccess(false)}><img src="/icon_LTW/FontistoClose.png" alt="#"></img></span>
             <div className="logout-modal-header">
               <span className="header-text">Thông Báo</span>
             </div>
@@ -488,13 +377,11 @@ const PointProgramManagement = () => {
       {showDeleteError && (
         <div className="logout-modal">
           <div className="logout-modal-content">
-            <span className="close-icon" onClick={() => setShowDeleteError(false)}>
-              <img src="/icon_LTW/FontistoClose.png" alt="#" />
-            </span>
+            <span className="close-icon" onClick={() => setShowDeleteError(false)}><img src="/icon_LTW/FontistoClose.png" alt="#"></img></span>
             <div className="logout-modal-header">
               <span className="header-text">Thông Báo</span>
             </div>
-            <p className="logout-message">Chương trình này đang được sử dụng.</p>
+            <p className="logout-message">Loại dịch vụ này đang được sử dụng.</p>
             <div className="logout-modal-buttons">
               <button className="confirm-button" onClick={() => setShowDeleteError(false)}>
                 OK
@@ -507,15 +394,30 @@ const PointProgramManagement = () => {
       {showInputError && (
         <div className="logout-modal">
           <div className="logout-modal-content">
-            <span className="close-icon" onClick={() => setShowInputError(false)}>
-              <img src="/icon_LTW/FontistoClose.png" alt="#" />
-            </span>
+            <span className="close-icon" onClick={() => setShowInputError(false)}><img src="/icon_LTW/FontistoClose.png" alt="#"></img></span>
             <div className="logout-modal-header">
               <span className="header-text">Thông Báo</span>
             </div>
-            <p className="logout-message">Vui lòng nhập đầy đủ thông tin.</p>
+            <p className="logout-message">Bạn chưa nhập đầy đủ thông tin. Vui lòng nhập đầy đủ thông tin!</p>
             <div className="logout-modal-buttons">
               <button className="confirm-button" onClick={() => setShowInputError(false)}>
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDuplicateError && (
+        <div className="logout-modal">
+          <div className="logout-modal-content">
+            <span className="close-icon" onClick={() => setShowDuplicateError(false)}><img src="/icon_LTW/FontistoClose.png" alt="#"></img></span>
+            <div className="logout-modal-header">
+              <span className="header-text">Thông Báo</span>
+            </div>
+            <p className="logout-message">Loại dịch vụ với tên này đã tồn tại.</p>
+            <div className="logout-modal-buttons">
+              <button className="confirm-button" onClick={() => setShowDuplicateError(false)}>
                 OK
               </button>
             </div>
@@ -526,4 +428,4 @@ const PointProgramManagement = () => {
   );
 };
 
-export default PointProgramManagement;
+export default ServiceTypeManagement;

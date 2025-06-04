@@ -22,7 +22,7 @@ const ServiceManagement = () => {
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
   const [showDeleteError, setShowDeleteError] = useState(false);
   const [showInputError, setShowInputError] = useState(false);
-  const [showDuplicateError, setShowDuplicateError] = useState(false); // Thêm state mới
+  const [showDuplicateError, setShowDuplicateError] = useState(false); // New state for duplicate error modal
   const [serviceToDelete, setServiceToDelete] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -100,38 +100,15 @@ const ServiceManagement = () => {
   };
 
   const handleConfirmDelete = async () => {
-    if (!serviceToDelete) {
-      setErrorMessage('Không có dịch vụ nào được chọn để xóa!');
-      setShowDeleteConfirm(false);
-      return;
-    }
-
     try {
       const response = await fetch(`${API_BASE_URL}/api/services/${serviceToDelete.maDichVu}`, {
         method: 'DELETE',
       });
-
       setShowDeleteConfirm(false);
 
       if (!response.ok) {
-        let errorMsg = `Lỗi HTTP: ${response.status} - ${response.statusText}`;
-        try {
-          const errorData = await response.json();
-          errorMsg = errorData.message || errorMsg;
-        } catch (parseError) {
-          console.warn('Không thể parse JSON từ phản hồi lỗi:', parseError);
-        }
-
-        if (
-          (response.status === 400 || response.status === 409) &&
-          (errorMsg.includes('đang được sử dụng') || errorMsg.includes('foreign key'))
-        ) {
-          setShowDeleteError(true);
-        } else {
-          setErrorMessage(errorMsg);
-        }
-        console.error('Lỗi xóa dịch vụ:', { status: response.status, message: errorMsg });
-        return;
+        setShowDeleteError(true);
+        throw new Error('Lỗi khi xóa dịch vụ');
       }
 
       const result = await response.json();
@@ -139,12 +116,11 @@ const ServiceManagement = () => {
         setShowDeleteSuccess(true);
         fetchServices();
       } else {
-        setErrorMessage(result.message || 'Xóa dịch vụ thất bại');
-        console.error('API trả về thất bại:', result);
+        setShowDeleteError(true);
       }
     } catch (error) {
       console.error('Lỗi khi gọi API xóa:', error);
-      setErrorMessage(error.message || 'Lỗi không xác định khi xóa dịch vụ');
+      setShowDeleteError(true);
     }
   };
 
@@ -166,7 +142,7 @@ const ServiceManagement = () => {
       const isDuplicate = services.some(
         (service) => service.tenDichVu.toLowerCase() === serviceData.tenDichVu.trim().toLowerCase()
       );
-      if (isDuplicate) return 'duplicate'; // Trả về 'duplicate' để xử lý modal
+      if (isDuplicate) return 'Dịch vụ với tên này đã tồn tại.';
     }
     return null;
   };
@@ -175,10 +151,10 @@ const ServiceManagement = () => {
     const serviceData = selectedService || newService;
     const validationError = validateServiceData(serviceData);
     if (validationError) {
-      if (validationError === 'duplicate') {
-        setShowDuplicateError(true); // Hiển thị modal lỗi trùng lặp
+      if (validationError === 'Dịch vụ với tên này đã tồn tại.') {
+        setShowDuplicateError(true); // Show duplicate error modal
       } else {
-        setShowInputError(true); // Hiển thị modal lỗi nhập liệu
+        setShowInputError(true);
       }
       return;
     }
@@ -202,19 +178,8 @@ const ServiceManagement = () => {
       });
 
       if (!response.ok) {
-        let errorMsg = `Lỗi HTTP: ${response.status} - ${response.statusText}`;
-        try {
-          const errorData = await response.json();
-          errorMsg = errorData.message || errorMsg;
-          // Kiểm tra lỗi trùng lặp từ API
-          if (errorMsg.includes('đã tồn tại') || errorMsg.includes('duplicate')) {
-            setShowDuplicateError(true);
-            return;
-          }
-        } catch (parseError) {
-          console.warn('Không thể parse JSON từ phản hồi lỗi:', parseError);
-        }
-        throw new Error(errorMsg);
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Lỗi HTTP: ${response.status} - ${response.statusText}`);
       }
 
       const result = await response.json();
@@ -495,7 +460,7 @@ const ServiceManagement = () => {
             <div className="logout-modal-header">
               <span className="header-text">Thông Báo</span>
             </div>
-            <p className="logout-message">Vui lòng nhập đầy đủ thông tin.</p>
+            <p className="logout-message">Bạn chưa nhập đầy đủ thông tin. Vui lòng nhập đầy đủ thông tin!</p>
             <div className="logout-modal-buttons">
               <button className="confirm-button" onClick={() => setShowInputError(false)}>
                 OK

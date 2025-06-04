@@ -13,8 +13,9 @@ const CustomerManagement = () => {
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
+  const [showDeleteError, setShowDeleteError] = useState(false); // State for error modal
   const [customerToDelete, setCustomerToDelete] = useState(null);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState(''); // Single state for error messages
 
   const API_BASE_URL = 'http://localhost:5282'; // URL cố định của backend
 
@@ -25,8 +26,7 @@ const CustomerManagement = () => {
       );
       const contentType = response.headers.get('content-type');
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Lỗi HTTP: ${response.status} - ${response.statusText}. Chi tiết: ${errorText.substring(0, 200)}`);
+        throw new Error(`Lỗi HTTP: ${response.status} - ${response.statusText}. Chi tiết: ${(await response.text()).substring(0, 200)}`);
       }
       if (!contentType || !contentType.includes('application/json')) {
         const text = await response.text();
@@ -75,7 +75,7 @@ const CustomerManagement = () => {
 
   const handleEdit = (customer) => {
     setSelectedCustomer({
-      maKhachHang: customer.MaKhachHang,
+      maKhachHang: customer.MaKhachHangasher,
       hoTenKhachHang: customer.HoTenKhachHang,
       dienThoai: customer.DienThoai,
       email: customer.Email,
@@ -97,27 +97,28 @@ const CustomerManagement = () => {
         method: 'DELETE',
       });
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Lỗi HTTP: ${response.status} - ${response.statusText}. Chi tiết: ${errorText}`);
+        throw new Error(`Không thể xóa khách hàng vì khách hàng này đã có lịch đặt phòng.`);
       }
       const result = await response.json();
       if (result.success) {
         setShowDeleteConfirm(false);
         setShowDeleteSuccess(true);
+        setErrorMessage(''); // Clear error message on successful deletion
         fetchCustomers();
       } else {
         throw new Error(result.message || 'Xóa khách hàng thất bại');
       }
     } catch (error) {
       console.error('Lỗi khi gọi API xóa:', error);
-      setErrorMessage(error.message);
+      setShowDeleteConfirm(false);
+      setShowDeleteError(true); // Show the error modal
+      setErrorMessage(error.message); // Set the error message for the modal
     }
   };
 
   const handleSave = async () => {
     try {
       if (selectedCustomer) {
-        // Sửa khách hàng (PUT)
         const response = await fetch(`${API_BASE_URL}/api/customers/${selectedCustomer.maKhachHang}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -132,14 +133,14 @@ const CustomerManagement = () => {
           }),
         });
         if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Lỗi HTTP: ${response.status} - ${response.statusText}. Chi tiết: ${errorText}`);
+          throw new Error(`Lỗi HTTP: ${response.status} - ${response.statusText}. Chi tiết: ${(await response.text())}`);
         }
         const result = await response.json();
         console.log('PUT Response:', result);
         if (result.success) {
           setShowDetailsModal(false);
           setShowSaveConfirm(true);
+          setErrorMessage(''); // Clear error message on successful save
           fetchCustomers();
         } else {
           throw new Error(result.message || 'Cập nhật khách hàng thất bại');
@@ -166,6 +167,12 @@ const CustomerManagement = () => {
     window.location.href = '/';
   };
 
+  // Clear error message when closing the error modal
+  const handleCloseDeleteError = () => {
+    setShowDeleteError(false);
+    setErrorMessage(''); // Clear the error message when modal is closed
+  };
+
   return (
     <div className="cm-main-container">
       <Sidebar
@@ -187,7 +194,8 @@ const CustomerManagement = () => {
       </div>
 
       <div className="cm-content-wrapper">
-        {errorMessage && (
+        {/* Only show error message if there is no modal active */}
+        {errorMessage && !showDeleteError && !showDeleteSuccess && !showDeleteConfirm && !showSaveConfirm && (
           <div className="cm-error-message">
             {errorMessage}
           </div>
@@ -364,6 +372,25 @@ const CustomerManagement = () => {
             <p className="logout-message">Xóa thành công!</p>
             <div className="logout-modal-buttons">
               <button className="confirm-button" onClick={() => setShowDeleteSuccess(false)}>
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteError && (
+        <div className="logout-modal">
+          <div className="logout-modal-content">
+            <span className="close-icon" onClick={handleCloseDeleteError}>
+              <img src="/icon_LTW/FontistoClose.png" alt="#" />
+            </span>
+            <div className="logout-modal-header">
+              <span className="header-text">Thông Báo</span>
+            </div>
+            <p className="logout-message">{errorMessage}</p>
+            <div className="logout-modal-buttons">
+              <button className="confirm-button" onClick={handleCloseDeleteError}>
                 OK
               </button>
             </div>

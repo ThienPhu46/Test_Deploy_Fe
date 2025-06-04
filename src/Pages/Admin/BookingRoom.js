@@ -56,7 +56,6 @@ const BookingList = () => {
         console.error('Lỗi khi lấy danh sách đặt phòng:', error);
       }
     };
-
     fetchBookings();
   }, []);
 
@@ -83,11 +82,10 @@ const BookingList = () => {
         console.error('Lỗi khi lấy danh sách loại phòng:', error);
       }
     };
-
     fetchRoomTypes();
   }, []);
 
-  // Lấy danh sách phòng trống (Available)
+  // Lấy danh sách phòng trống (dựa trên TrangThai = 'Sẵn sàng')
   useEffect(() => {
     const fetchAvailableRooms = async () => {
       try {
@@ -95,19 +93,23 @@ const BookingList = () => {
           params: {
             pageNumber: 1,
             pageSize: 100,
-            tinhTrang: 'Available',
+            trangThai: 'Trống', // Lọc theo TrangThai
+            tinhtrang: 'Đã dọn dẹp',
             sortBy: 'MaPhong',
             sortOrder: 'ASC'
           }
         });
+        console.log('Dữ liệu phòng trống từ API:', response.data); // Log để kiểm tra
         if (response.data.success) {
-          // Ánh xạ mã loại phòng thành tên loại phòng
           const rooms = response.data.data.map(room => ({
             id: room.soPhong,
             maLoaiPhong: room.loaiPhong,
             type: roomTypes[room.loaiPhong] || 'Chưa xác định'
           }));
           setAvailableRooms(rooms);
+          console.log('Danh sách phòng trống đã được cập nhật:', rooms); // Log danh sách sau khi ánh xạ
+        } else {
+          console.error('API trả về không thành công:', response.data.message);
         }
       } catch (error) {
         console.error('Lỗi khi lấy danh sách phòng trống:', error);
@@ -133,7 +135,6 @@ const BookingList = () => {
           return { [booking.maKhachHang]: 'Unknown' };
         }
       });
-
       const customersData = await Promise.all(customerPromises);
       const customersMap = Object.assign({}, ...customersData);
       setCustomers(customersMap);
@@ -158,7 +159,6 @@ const BookingList = () => {
         if (roomResponse.data.success) {
           roomNumber = roomResponse.data.data.soPhong;
         }
-
         setSelectedBooking({
           id: booking.maDatPhong,
           customerName: customers[booking.maKhachHang] || 'Unknown',
@@ -183,15 +183,13 @@ const BookingList = () => {
         setBookings(bookings.filter((booking) => booking.maDatPhong !== bookingToDelete.id));
         setShowDeleteConfirm(false);
         setShowDeleteSuccess(true);
-        
-        // Cập nhật lại danh sách phòng trống
         const roomResponse = await axios.get(`${API_BASE_URL}/rooms`, {
-          params: { 
-            pageNumber: 1, 
-            pageSize: 100, 
-            tinhTrang: 'Available', 
-            sortBy: 'MaPhong', 
-            sortOrder: 'ASC' 
+          params: {
+            pageNumber: 1,
+            pageSize: 100,
+            trangThai: 'Sẵn sàng',
+            sortBy: 'MaPhong',
+            sortOrder: 'ASC'
           }
         });
         if (roomResponse.data.success) {
@@ -215,73 +213,106 @@ const BookingList = () => {
       return;
     }
 
+    // Kiểm tra dữ liệu đầu vào
+    if (!customerInfo.hoTen || !customerInfo.sdt) {
+      alert('Vui lòng điền đầy đủ thông tin khách hàng (Họ tên và Số điện thoại).');
+      return;
+    }
+    if (!bookingInfo.ngayBatDau || !bookingInfo.gioBatDau || !bookingInfo.ngayKetThuc || !bookingInfo.gioKetThuc) {
+      alert('Vui lòng điền đầy đủ thông tin thời gian đặt phòng (Ngày và Giờ bắt đầu/kết thúc).');
+      return;
+    }
+
     try {
-      // Tạo khách hàng
+      // Bước 1: Tạo khách hàng mới
+      console.log('Bắt đầu tạo khách hàng:', customerInfo);
       const customerResponse = await axios.post(`${API_BASE_URL}/customers`, {
         hoTenKhachHang: customerInfo.hoTen,
         email: `${customerInfo.sdt}@example.com`,
         dienThoai: customerInfo.sdt,
         maCT: '1'
       });
-
+      console.log('Phản hồi từ API tạo khách hàng:', customerResponse.data);
       if (!customerResponse.data.success) {
         alert('Không thể tạo khách hàng: ' + customerResponse.data.message);
         return;
       }
-
       const maKhachHang = customerResponse.data.data;
+      console.log('Mã khách hàng:', maKhachHang);
 
-      // Tạo đặt phòng cho mỗi phòng đã chọn
+      // Bước 2: Tạo đặt phòng cho từng phòng đã chọn
+      console.log('Bắt đầu tạo đặt phòng cho các phòng:', selectedRooms);
       const bookingPromises = selectedRooms.map(async (room) => {
-        // Lấy mã phòng từ số phòng
+        console.log('Tìm phòng với số phòng:', room.id);
         const roomResponse = await axios.get(`${API_BASE_URL}/rooms/search?soPhong=${room.id}`);
+        console.log('Phản hồi từ API tìm phòng:', roomResponse.data);
         if (!roomResponse.data.success) {
-          throw new Error(`Không tìm thấy phòng ${room.id}`);
+          throw new Error(`Không tìm thấy phòng ${room.id}: ${roomResponse.data.message}`);
         }
         const maPhong = roomResponse.data.data.maPhong;
+        if (!maPhong) {
+          throw new Error(`Mã phòng không tồn tại cho phòng ${room.id}`);
+        }
+        console.log('Mã phòng:', maPhong);
 
-        const checkIn = new Date(`${bookingInfo.ngayBatDau}T${bookingInfo.gioBatDau}`);
-        const checkOut = new Date(`${bookingInfo.ngayKetThuc}T${bookingInfo.gioKetThuc}`);
-        
-        return axios.post(`${API_BASE_URL}/bookings`, {
+        const checkIn = new Date(`${bookingInfo.ngayBatDau}T${bookingInfo.gioBatDau}:00`);
+        const checkOut = new Date(`${bookingInfo.ngayKetThuc}T${bookingInfo.gioKetThuc}:00`);
+
+        // Kiểm tra thời gian hợp lệ
+        if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime())) {
+          throw new Error('Thời gian check-in hoặc check-out không hợp lệ.');
+        }
+        if (checkIn >= checkOut) {
+          throw new Error('Thời gian check-out phải sau thời gian check-in.');
+        }
+
+        console.log('Thời gian check-in:', checkIn.toISOString());
+        console.log('Thời gian check-out:', checkOut.toISOString());
+
+        const bookingData = {
           maKhachHang: parseInt(maKhachHang),
-          maPhong: maPhong,
+          maPhong: parseInt(maPhong),
           gioCheckIn: checkIn.toISOString(),
           gioCheckOut: checkOut.toISOString(),
           ngayDat: new Date().toISOString(),
           loaiTinhTien: 'Nightly'
-        });
+        };
+        console.log('Dữ liệu gửi đến API đặt phòng:', bookingData);
+
+        return axios.post(`${API_BASE_URL}/bookings`, bookingData);
       });
 
       const responses = await Promise.all(bookingPromises);
+      console.log('Phản hồi từ API tạo đặt phòng:', responses.map(res => res.data));
       const allSuccess = responses.every((res) => res.data.success);
-
       if (allSuccess) {
         setShowSaveConfirm(true);
         setIsFormOpen(false);
         setSelectedRooms([]);
         setCustomerInfo({ hoTen: '', sdt: '' });
         setBookingInfo({ ngayBatDau: '', gioBatDau: '', ngayKetThuc: '', gioKetThuc: '' });
-        
-        // Tải lại danh sách đặt phòng
+
+        // Làm mới danh sách đặt phòng
         const bookingResponse = await axios.get(`${API_BASE_URL}/bookings`, {
           params: { pageNumber: 1, pageSize: 100, sortBy: 'MaDatPhong', sortOrder: 'ASC' }
         });
+        console.log('Danh sách đặt phòng sau khi làm mới:', bookingResponse.data);
         if (bookingResponse.data.success) {
           setBookings(bookingResponse.data.data);
           await fetchCustomerData(bookingResponse.data.data);
         }
-        
-        // Tải lại danh sách phòng trống
+
+        // Làm mới danh sách phòng trống
         const roomResponse = await axios.get(`${API_BASE_URL}/rooms`, {
-          params: { 
-            pageNumber: 1, 
-            pageSize: 100, 
-            tinhTrang: 'Available', 
-            sortBy: 'MaPhong', 
-            sortOrder: 'ASC' 
+          params: {
+            pageNumber: 1,
+            pageSize: 100,
+            trangThai: 'Sẵn sàng',
+            sortBy: 'MaPhong',
+            sortOrder: 'ASC'
           }
         });
+        console.log('Danh sách phòng trống sau khi làm mới:', roomResponse.data);
         if (roomResponse.data.success) {
           const rooms = roomResponse.data.data.map(room => ({
             id: room.soPhong,
@@ -290,10 +321,13 @@ const BookingList = () => {
           }));
           setAvailableRooms(rooms);
         }
+      } else {
+        const failedResponse = responses.find(res => !res.data.success);
+        throw new Error(`Tạo đặt phòng thất bại: ${failedResponse?.data.message || 'Không có thông tin lỗi'}`);
       }
     } catch (error) {
       console.error('Lỗi khi tạo đặt phòng:', error);
-      alert('Đã xảy ra lỗi khi tạo đặt phòng.');
+      alert('Đã xảy ra lỗi khi tạo đặt phòng: ' + error.message);
     }
   };
 
@@ -525,80 +559,82 @@ const BookingList = () => {
               </div>
             </div>
 
-            <div className="rooms-container">
-              <div className="rooms-section">
-                <h4>Danh sách phòng trống</h4>
-                <table className="room-table">
-                  <thead>
-                    <tr>
-                      <th>Số phòng</th>
-                      <th>Loại phòng</th>
-                      <th>Thêm</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {availableRooms.length > 0 ? (
-                      availableRooms.map((room) => (
-                        <tr key={room.id}>
-                          <td>{room.id}</td>
-                          <td>{room.type}</td>
-                          <td>
-                            <button
-                              className="action-button add-room-button"
-                              onClick={() => handleAddRoom(room)}
-                            >
-                              <img src="/icon_LTW/MdiPlusCircle.png" alt="Thêm phòng"></img>
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
+            <div className="rooms-scrollable-container">
+              <div className="rooms-container">
+                <div className="rooms-section">
+                  <h4>Danh sách phòng trống</h4>
+                  <table className="room-table">
+                    <thead>
                       <tr>
-                        <td colSpan="3">Không có phòng trống</td>
+                        <th>Số phòng</th>
+                        <th>Loại phòng</th>
+                        <th>Thêm</th>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {availableRooms.length > 0 ? (
+                        availableRooms.map((room) => (
+                          <tr key={room.id}>
+                            <td>{room.id}</td>
+                            <td>{room.type}</td>
+                            <td>
+                              <button
+                                className="action-button add-room-button"
+                                onClick={() => handleAddRoom(room)}
+                              >
+                                <img src="/icon_LTW/MdiPlusCircle.png" alt="Thêm phòng"></img>
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="3">Không có phòng trống</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
 
-              <div className="rooms-section">
-                <h4>Phòng đã chọn</h4>
-                <table className="room-table">
-                  <thead>
-                    <tr>
-                      <th>Số phòng</th>
-                      <th>Loại phòng</th>
-                      <th>Xóa</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {selectedRooms.length > 0 ? (
-                      selectedRooms.map((room) => (
-                        <tr key={room.id}>
-                          <td>{room.id}</td>
-                          <td>{room.type}</td>
-                          <td>
-                            <button
-                              className="action-button remove-room-button"
-                              onClick={() => handleRemoveRoom(room.id)}
-                            >
-                              <img src="/icon_LTW/MdiMinusCircle.png" alt="Xóa phòng"></img>
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
+                <div className="rooms-section">
+                  <h4>Phòng đã chọn</h4>
+                  <table className="room-table">
+                    <thead>
                       <tr>
-                        <td colSpan="3">Chưa có phòng nào được chọn</td>
+                        <th>Số phòng</th>
+                        <th>Loại phòng</th>
+                        <th>Xóa</th>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {selectedRooms.length > 0 ? (
+                        selectedRooms.map((room) => (
+                          <tr key={room.id}>
+                            <td>{room.id}</td>
+                            <td>{room.type}</td>
+                            <td>
+                              <button
+                                className="action-button remove-room-button"
+                                onClick={() => handleRemoveRoom(room.id)}
+                              >
+                                <img src="/icon_LTW/MdiMinusCircle.png" alt="Xóa phòng"></img>
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan="3">Chưa có phòng nào được chọn</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
 
             <div className="form-buttons">
-              <button className="cancel-button" onClick={handleSaveBooking}>LƯU</button>
+              <button className="cancel-buttonn" onClick={handleSaveBooking}>LƯU</button>
               <button className="cancel-buttonn" onClick={handleCloseForm}>THOÁT</button>
             </div>
           </div>
