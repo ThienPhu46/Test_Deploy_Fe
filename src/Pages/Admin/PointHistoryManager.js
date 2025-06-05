@@ -11,7 +11,7 @@ const PointHistoryManagement = () => {
   const [pointHistory, setPointHistory] = useState([]);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const API_BASE_URL = 'http://localhost:5282'; // URL cố định của backend
+  const API_BASE_URL = process.env.REACT_APP_API_URL; // URL cố định của backend
 
   const fetchPointHistory = useCallback(async () => {
     try {

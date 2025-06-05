@@ -32,7 +32,7 @@ const AccountManagement = () => {
   const [pageSize] = useState(10);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const API_BASE_URL = 'http://localhost:5282/api/accounts';
+  const API_BASE_URL = `${process.env.REACT_APP_API_URL}/api/accounts`;
 
   const fetchAccounts = useCallback(async () => {
     try {

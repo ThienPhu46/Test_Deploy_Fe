@@ -25,7 +25,7 @@ const PointProgramManagement = () => {
   const [programToDelete, setProgramToDelete] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const API_BASE_URL = 'http://localhost:5282';
+  const API_BASE_URL = process.env.REACT_APP_API_URL;
 
   const fetchPointPrograms = useCallback(async () => {
     try {

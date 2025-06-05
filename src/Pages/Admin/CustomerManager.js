@@ -17,7 +17,7 @@ const CustomerManagement = () => {
   const [customerToDelete, setCustomerToDelete] = useState(null);
   const [errorMessage, setErrorMessage] = useState(''); // Single state for error messages
 
-  const API_BASE_URL = 'http://localhost:5282'; // URL cố định của backend
+  const API_BASE_URL = process.env.REACT_APP_API_URL;  // URL cố định của backend
 
   const fetchCustomers = useCallback(async () => {
     try {

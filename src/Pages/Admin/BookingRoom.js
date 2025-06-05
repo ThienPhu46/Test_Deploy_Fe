@@ -32,7 +32,7 @@ const BookingList = () => {
     gioKetThuc: ''
   });
 
-  const API_BASE_URL = 'http://localhost:5282/api';
+  const API_BASE_URL = `${process.env.REACT_APP_API_URL}/api`;
 
   // Lấy danh sách đặt phòng
   useEffect(() => {
